@@ -83,7 +83,7 @@ export type PortfolioMetrics = {
   currentDrawdown: number;
 };
 
-export const PORTFOLIO_CAPITAL = 350_000;
+export const PORTFOLIO_CAPITAL = 0;
 export const STORAGE_KEY = "ledgerly.trades.v2";
 export const LEGACY_STORAGE_KEY = "ledgerly.trades.v1";
 
