@@ -16,6 +16,8 @@ import {
 
 type Props = {
   trades: Trade[];
+  /** Live portfolio capital used for allocation and PF impact percentages. */
+  capital: number;
   visibleColumns: Set<ColumnKey>;
   onUpdate: (id: string, patch: Partial<Trade>) => void;
   onDelete: (id: string) => void;
@@ -217,6 +219,7 @@ const toneForNumber = (number: number) =>
 
 export function TradeTable({
   trades,
+  capital,
   visibleColumns,
   onUpdate,
   onDelete,
@@ -224,7 +227,7 @@ export function TradeTable({
   refreshingIds = new Set(),
 }: Props) {
   const show = (key: ColumnKey) => visibleColumns.has(key);
-  const metrics = calculateTradeMetrics(trades);
+  const metrics = calculateTradeMetrics(trades, new Date(), capital);
   const remove = (trade: Trade) => {
     if (window.confirm(`Delete trade #${trade.tradeNo} (${trade.name})?`)) {
       onDelete(trade.id);

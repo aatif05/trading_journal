@@ -47,7 +47,7 @@ export function KpiGrid({ metrics }: { metrics: PortfolioMetrics }) {
     {
       label: "Unrealized P/L",
       value: formatCurrency(metrics.unrealizedPL),
-      detail: `${formatPercent((metrics.unrealizedPL * 100) / 350_000)} of pf`,
+      detail: `${formatPercent(metrics.unrealizedPercent)} of pf`,
       tone: metrics.unrealizedPL < 0 ? "red" : "green",
       icon: TrendingUp,
     },

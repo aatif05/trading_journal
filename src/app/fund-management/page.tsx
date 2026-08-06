@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { useCapitalFlows } from "@/hooks/use-capital-flows";
 import { useTrades } from "@/hooks/use-trades";
 import { calculateFundYear, type FundMonth } from "@/lib/fund-management";
-import { formatCurrency, formatPercent, PORTFOLIO_CAPITAL } from "@/lib/trades";
+import { formatCurrency, formatPercent } from "@/lib/trades";
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -277,8 +277,8 @@ export default function FundManagementPage() {
 
         <p className="mt-3 text-[10px] leading-4 text-[#929a95]">
           Monthly trade metrics include closed trades only and are attributed to their latest exit
-          date. Capital starts at {formatCurrency(PORTFOLIO_CAPITAL, 0)} each year before deposits
-          and withdrawals.
+          date. January opens on the previous year&apos;s closing capital, so deposits and
+          withdrawals carry forward across years.
         </p>
       </div>
 

@@ -1,4 +1,4 @@
-import { calculateTrade, PORTFOLIO_CAPITAL, type Trade } from "./trades";
+import { calculateTrade, type Trade, type TradeMetric } from "./trades";
 
 export const FUND_FLOWS_STORAGE_KEY = "ledgerly.fund-flows.v1";
 
@@ -24,6 +24,9 @@ export type FundMonth = CapitalFlow & {
 
 const flowKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, "0")}`;
 
+/** Chronological index so months can be compared and walked across year boundaries. */
+const periodIndex = (year: number, month: number) => year * 12 + month;
+
 const finiteNonNegative = (value: unknown) => {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : 0;
@@ -41,26 +44,85 @@ function closedMonth(trade: Trade) {
   return month >= 0 && month <= 11 ? { year: Number(match[1]), month } : null;
 }
 
+type LedgerEntry = { added: number; withdrawn: number; trades: TradeMetric[] };
+
+/** Every month that carries capital flows or closed trades, keyed chronologically. */
+function buildLedger(trades: Trade[], flows: CapitalFlows) {
+  const ledger = new Map<number, LedgerEntry>();
+  const entryAt = (index: number) => {
+    const existing = ledger.get(index);
+    if (existing) return existing;
+    const created: LedgerEntry = { added: 0, withdrawn: 0, trades: [] };
+    ledger.set(index, created);
+    return created;
+  };
+
+  for (const [key, flow] of Object.entries(flows)) {
+    const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(key);
+    if (!match) continue;
+    const entry = entryAt(periodIndex(Number(match[1]), Number(match[2]) - 1));
+    entry.added += finiteNonNegative(flow?.added);
+    entry.withdrawn += finiteNonNegative(flow?.withdrawn);
+  }
+
+  for (const trade of trades) {
+    const period = closedMonth(trade);
+    if (period) entryAt(periodIndex(period.year, period.month)).trades.push(calculateTrade(trade));
+  }
+
+  return ledger;
+}
+
+const netPLOf = (entry: LedgerEntry | undefined) =>
+  entry ? entry.trades.reduce((sum, trade) => sum + trade.grossPL, 0) : 0;
+
+/** Runs the capital chain forward through `throughIndex`, inclusive. */
+function capitalThrough(ledger: Map<number, LedgerEntry>, throughIndex: number, baseline: number) {
+  return [...ledger.entries()]
+    .filter(([index]) => index <= throughIndex)
+    .sort(([a], [b]) => a - b)
+    .reduce(
+      (capital, [, entry]) => capital + entry.added - entry.withdrawn + netPLOf(entry),
+      baseline,
+    );
+}
+
+/**
+ * Capital available right now: deposits and withdrawals recorded up to the current
+ * month plus P/L already booked by closed trades. Open positions are excluded
+ * because their P/L is not realised capital yet.
+ */
+export function calculateCurrentCapital(
+  trades: Trade[],
+  flows: CapitalFlows,
+  now = new Date(),
+  baseline = 0,
+) {
+  return capitalThrough(
+    buildLedger(trades, flows),
+    periodIndex(now.getFullYear(), now.getMonth()),
+    baseline,
+  );
+}
+
 export function calculateFundYear(
   trades: Trade[],
   flows: CapitalFlows,
   year: number,
-  baseline = PORTFOLIO_CAPITAL,
+  baseline = 0,
 ): FundMonth[] {
-  const attributed = Array.from({ length: 12 }, () => [] as ReturnType<typeof calculateTrade>[]);
+  const ledger = buildLedger(trades, flows);
 
-  for (const trade of trades) {
-    const period = closedMonth(trade);
-    if (period?.year === year) attributed[period.month].push(calculateTrade(trade));
-  }
+  // January opens on the closing capital of every earlier year.
+  let previousFinal = capitalThrough(ledger, periodIndex(year, 0) - 1, baseline);
 
-  let previousFinal = baseline;
-  return attributed.map((monthlyTrades, month) => {
-    const flow = flows[flowKey(year, month)] ?? { added: 0, withdrawn: 0 };
-    const added = finiteNonNegative(flow.added);
-    const withdrawn = finiteNonNegative(flow.withdrawn);
+  return Array.from({ length: 12 }, (_, month) => {
+    const entry = ledger.get(periodIndex(year, month));
+    const monthlyTrades = entry?.trades ?? [];
+    const added = entry?.added ?? 0;
+    const withdrawn = entry?.withdrawn ?? 0;
     const startingCapital = previousFinal + added - withdrawn;
-    const netPL = monthlyTrades.reduce((sum, trade) => sum + trade.grossPL, 0);
+    const netPL = netPLOf(entry);
     const finalCapital = startingCapital + netPL;
     const winners = monthlyTrades.filter((trade) => trade.grossPL > 0);
     const losers = monthlyTrades.filter((trade) => trade.grossPL < 0);

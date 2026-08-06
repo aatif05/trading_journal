@@ -73,6 +73,7 @@ export type PortfolioMetrics = {
   winRate: number;
   realizedPL: number;
   unrealizedPL: number;
+  unrealizedPercent: number;
   capitalAtRisk: number;
   capitalAtRiskPercent: number;
   profitProtected: number;
@@ -81,9 +82,10 @@ export type PortfolioMetrics = {
   investedPercent: number;
   grossImpact: number;
   currentDrawdown: number;
+  /** Live portfolio capital the percentages above are measured against. */
+  capital: number;
 };
 
-export const PORTFOLIO_CAPITAL = 0;
 export const STORAGE_KEY = "ledgerly.trades.v2";
 export const LEGACY_STORAGE_KEY = "ledgerly.trades.v1";
 
@@ -343,7 +345,19 @@ function normalizeTrade(trade: Record<string, unknown>): Trade {
   };
 }
 
-export function calculateTrade(trade: Trade, now = new Date(), cummPF = 0): TradeMetric {
+/**
+ * Percentages are measured against live portfolio capital (deposits, withdrawals
+ * and booked P/L). Capital is 0 until fund flows are recorded, so guard the ratio.
+ */
+const shareOfCapital = (value: number, capital: number) =>
+  capital > 0 ? (value * 100) / capital : 0;
+
+export function calculateTrade(
+  trade: Trade,
+  now = new Date(),
+  cummPF = 0,
+  capital = 0,
+): TradeMetric {
   const direction = trade.side === "Buy" ? 1 : -1;
   const totalQty = trade.initialQty + trade.p1Qty + trade.p2Qty;
   const exitedQty = Math.min(totalQty, trade.e1Qty + trade.e2Qty + trade.e3Qty);
@@ -380,7 +394,7 @@ export function calculateTrade(trade: Trade, now = new Date(), cummPF = 0): Trad
     ? 0
     : Math.max(0, Math.round((end.valueOf() - start.valueOf()) / 86_400_000));
   const grossPL = realized + unrealized - (trade.brokerage || 0);
-  const portfolioImpact = (grossPL * 100) / PORTFOLIO_CAPITAL;
+  const portfolioImpact = shareOfCapital(grossPL, capital);
   const positionSize = averageEntry * totalQty;
 
   return {
@@ -399,24 +413,28 @@ export function calculateTrade(trade: Trade, now = new Date(), cummPF = 0): Trad
     holdingDays,
     portfolioImpact,
     positionSize,
-    currentAllocation: (invested * 100) / PORTFOLIO_CAPITAL,
+    currentAllocation: shareOfCapital(invested, capital),
     slPercent: averageEntry && trade.sl ? (Math.abs(averageEntry - trade.sl) * 100) / averageEntry : 0,
     computedAvgExit,
     cummPF: cummPF + portfolioImpact,
   };
 }
 
-export function calculateTradeMetrics(trades: Trade[], now = new Date()): TradeMetric[] {
+export function calculateTradeMetrics(
+  trades: Trade[],
+  now = new Date(),
+  capital = 0,
+): TradeMetric[] {
   let running = 0;
   return trades.map((trade) => {
-    const metric = calculateTrade(trade, now, running);
+    const metric = calculateTrade(trade, now, running, capital);
     running = metric.cummPF;
     return metric;
   });
 }
 
-export function calculatePortfolio(trades: Trade[]): PortfolioMetrics {
-  const rows = calculateTradeMetrics(trades);
+export function calculatePortfolio(trades: Trade[], capital = 0): PortfolioMetrics {
+  const rows = calculateTradeMetrics(trades, new Date(), capital);
   const closed = rows.filter((trade) => trade.positionStatus === "Closed");
   const sum = (pick: (trade: TradeMetric) => number) =>
     rows.reduce((total, trade) => total + pick(trade), 0);
@@ -435,14 +453,16 @@ export function calculatePortfolio(trades: Trade[]): PortfolioMetrics {
       : 0,
     realizedPL,
     unrealizedPL,
+    unrealizedPercent: shareOfCapital(unrealizedPL, capital),
     capitalAtRisk,
-    capitalAtRiskPercent: (capitalAtRisk * 100) / PORTFOLIO_CAPITAL,
+    capitalAtRiskPercent: shareOfCapital(capitalAtRisk, capital),
     profitProtected,
-    profitProtectedPercent: (profitProtected * 100) / PORTFOLIO_CAPITAL,
+    profitProtectedPercent: shareOfCapital(profitProtected, capital),
     invested,
-    investedPercent: (invested * 100) / PORTFOLIO_CAPITAL,
-    grossImpact: (grossPL * 100) / PORTFOLIO_CAPITAL,
-    currentDrawdown: Math.min(0, (grossPL * 100) / PORTFOLIO_CAPITAL),
+    investedPercent: shareOfCapital(invested, capital),
+    grossImpact: shareOfCapital(grossPL, capital),
+    currentDrawdown: Math.min(0, shareOfCapital(grossPL, capital)),
+    capital,
   };
 }
 

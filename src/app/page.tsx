@@ -6,22 +6,25 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { JournalToolbar } from "@/components/journal/journal-toolbar";
 import { KpiGrid } from "@/components/journal/kpi-grid";
 import { TradeTable } from "@/components/journal/trade-table";
+import { useCapitalFlows } from "@/hooks/use-capital-flows";
 import { usePriceRefresh } from "@/hooks/use-price-refresh";
 import { useTrades } from "@/hooks/use-trades";
-import { ColumnKey, PORTFOLIO_CAPITAL, tradeColumns } from "@/lib/trades";
+import { calculateCurrentCapital } from "@/lib/fund-management";
+import { calculatePortfolio, ColumnKey, formatCurrency, tradeColumns } from "@/lib/trades";
 
 export default function Home() {
   const {
     trades,
     setTrades,
-    metrics,
-    hydrated,
+    hydrated: tradesHydrated,
     addTrade,
     updateTrade,
     updateCmps,
     deleteTrade,
     reset,
   } = useTrades();
+  const { flows, hydrated: flowsHydrated } = useCapitalFlows();
+  const hydrated = tradesHydrated && flowsHydrated;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"All" | "Open" | "Closed">("Open");
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
@@ -37,6 +40,9 @@ export default function Home() {
     lastFetchedAt,
     clearError,
   } = usePriceRefresh(trades, updateCmps);
+
+  const capital = useMemo(() => calculateCurrentCapital(trades, flows), [flows, trades]);
+  const metrics = useMemo(() => calculatePortfolio(trades, capital), [capital, trades]);
 
   const filteredTrades = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -59,12 +65,6 @@ export default function Home() {
       return next;
     });
   };
-
-  const capital = new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(PORTFOLIO_CAPITAL);
 
   const fetchedLabel = lastFetchedAt
     ? new Intl.DateTimeFormat("en-IN", {
@@ -151,11 +151,12 @@ export default function Home() {
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-[#25a66b]" />
-              Portfolio capital: <strong>{capital}</strong>
+              Portfolio capital: <strong>{formatCurrency(capital, 0)}</strong>
             </span>
           </div>
           <TradeTable
             trades={filteredTrades}
+            capital={capital}
             visibleColumns={visibleColumns}
             onUpdate={updateTrade}
             onDelete={deleteTrade}

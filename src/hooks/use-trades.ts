@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  calculatePortfolio,
   createTrade,
   demoTrades,
   LEGACY_STORAGE_KEY,
@@ -59,12 +58,10 @@ export function useTrades() {
   }, []);
 
   const reset = useCallback(() => setTrades(demoTrades), []);
-  const metrics = useMemo(() => calculatePortfolio(trades), [trades]);
 
   return {
     trades,
     setTrades,
-    metrics,
     hydrated,
     addTrade,
     updateTrade,
