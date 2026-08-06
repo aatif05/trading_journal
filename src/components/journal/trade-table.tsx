@@ -193,9 +193,17 @@ function MetricPill({
   );
 }
 
-function TableHead({ children }: { children: React.ReactNode }) {
+function TableHead({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <th className="h-11 border-b border-[#e8ebe9] bg-[#fbfcfb] px-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.075em] text-[#747d77]">
+    <th
+      className={`h-11 border-b border-[#e8ebe9] bg-[#fbfcfb] px-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.075em] text-[#747d77] ${className}`}
+    >
       <span className="flex items-center gap-1.5">
         <span className="text-[#c2c8c4]">⋮⋮</span>
         {children}
@@ -240,7 +248,9 @@ export function TradeTable({
             <th className="sticky left-0 z-40 h-11 w-12 border-b border-r border-[#e8ebe9] bg-[#fbfcfb] px-2" />
             {show("tradeNo") && <TableHead>Trade no.</TableHead>}
             {show("date") && <TableHead>Date</TableHead>}
-            {show("name") && <TableHead>Name</TableHead>}
+            {show("name") && (
+              <TableHead className="sticky left-12 z-40 border-r">Name</TableHead>
+            )}
             {show("setup") && <TableHead>Setup</TableHead>}
             {show("side") && <TableHead>Buy/Sell</TableHead>}
             {show("entry") && <TableHead>Entry (₹)</TableHead>}
@@ -325,7 +335,9 @@ export function TradeTable({
                   </td>
                 )}
                 {show("name") && (
-                  <td className={`${cell} ${widths.name}`}>
+                  <td
+                    className={`${cell} ${widths.name} sticky left-12 z-10 border-r bg-white group-hover:bg-[#fbfcfb]`}
+                  >
                     <TextInput
                       className="font-semibold uppercase"
                       value={trade.name}
