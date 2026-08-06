@@ -31,10 +31,10 @@ const widths: Partial<Record<ColumnKey, string>> = {
   side: "w-[112px]",
   entry: "w-[115px]",
   avgEntry: "w-[120px]",
-  initialQty: "w-[125px]",
   sl: "w-[110px]",
   cmp: "w-[120px]",
   entryType: "w-[150px]",
+  initialQty: "w-[125px]",
   p1Price: "w-[120px]",
   p1Qty: "w-[125px]",
   p1Date: "w-[132px]",
@@ -43,15 +43,21 @@ const widths: Partial<Record<ColumnKey, string>> = {
   p2Qty: "w-[125px]",
   p2Date: "w-[132px]",
   p2Sl: "w-[110px]",
-  p3Price: "w-[120px]",
-  p3Qty: "w-[125px]",
-  p3Date: "w-[132px]",
   tsl: "w-[110px]",
   tslGroups: "w-[130px]",
   positionSize: "w-[130px]",
-  currentAllocation: "w-[135px]",
-  peakAllocation: "w-[130px]",
+  currentAllocation: "w-[150px]",
+  peakAllocation: "w-[145px]",
   slPercent: "w-[95px]",
+  e1Price: "w-[120px]",
+  e1Qty: "w-[125px]",
+  e1Date: "w-[132px]",
+  e2Price: "w-[120px]",
+  e2Qty: "w-[125px]",
+  e2Date: "w-[132px]",
+  e3Price: "w-[120px]",
+  e3Qty: "w-[125px]",
+  e3Date: "w-[132px]",
   openQty: "w-[115px]",
   exitedQty: "w-[120px]",
   avgExitPrice: "w-[130px]",
@@ -70,6 +76,7 @@ const widths: Partial<Record<ColumnKey, string>> = {
   baseDuration: "w-[130px]",
   quickNote: "w-[180px]",
   unrealized: "w-[130px]",
+  brokerage: "w-[120px]",
   actions: "w-[90px]",
 };
 
@@ -238,27 +245,33 @@ export function TradeTable({
             {show("side") && <TableHead>Buy/Sell</TableHead>}
             {show("entry") && <TableHead>Entry (₹)</TableHead>}
             {show("avgEntry") && <TableHead>Avg entry (₹)</TableHead>}
-            {show("initialQty") && <TableHead>Initial qty/lot</TableHead>}
             {show("sl") && <TableHead>SL (₹)</TableHead>}
             {show("cmp") && <TableHead>CMP (₹)</TableHead>}
             {show("entryType") && <TableHead>Entry type</TableHead>}
-            {show("p1Price") && <TableHead>Exit 1 price (₹)</TableHead>}
-            {show("p1Qty") && <TableHead>Exit 1 qty/lot</TableHead>}
-            {show("p1Date") && <TableHead>Exit 1 date</TableHead>}
-            {show("p1Sl") && <TableHead>Exit 1 SL (₹)</TableHead>}
-            {show("p2Price") && <TableHead>Exit 2 price (₹)</TableHead>}
-            {show("p2Qty") && <TableHead>Exit 2 qty/lot</TableHead>}
-            {show("p2Date") && <TableHead>Exit 2 date</TableHead>}
-            {show("p2Sl") && <TableHead>P2 SL (₹)</TableHead>}
-            {show("p3Price") && <TableHead>Exit 3 price (₹)</TableHead>}
-            {show("p3Qty") && <TableHead>Exit 3 qty/lot</TableHead>}
-            {show("p3Date") && <TableHead>Exit 3 date</TableHead>}
+            {show("initialQty") && <TableHead>Initial qty/lot</TableHead>}
+            {show("p1Price") && <TableHead>Add 1 price (₹)</TableHead>}
+            {show("p1Qty") && <TableHead>Add 1 qty/lot</TableHead>}
+            {show("p1Date") && <TableHead>Add 1 date</TableHead>}
+            {show("p1Sl") && <TableHead>Add 1 SL (₹)</TableHead>}
+            {show("p2Price") && <TableHead>Add 2 price (₹)</TableHead>}
+            {show("p2Qty") && <TableHead>Add 2 qty/lot</TableHead>}
+            {show("p2Date") && <TableHead>Add 2 date</TableHead>}
+            {show("p2Sl") && <TableHead>Add 2 SL (₹)</TableHead>}
             {show("tsl") && <TableHead>TSL (₹)</TableHead>}
             {show("tslGroups") && <TableHead>TSL groups</TableHead>}
             {show("positionSize") && <TableHead>Position size</TableHead>}
-            {show("currentAllocation") && <TableHead>Current allocation</TableHead>}
-            {show("peakAllocation") && <TableHead>Peak allocation</TableHead>}
+            {show("currentAllocation") && <TableHead>Current allocation (%)</TableHead>}
+            {show("peakAllocation") && <TableHead>Peak allocation (%)</TableHead>}
             {show("slPercent") && <TableHead>SL %</TableHead>}
+            {show("e1Price") && <TableHead>Exit 1 price (₹)</TableHead>}
+            {show("e1Qty") && <TableHead>Exit 1 qty/lot</TableHead>}
+            {show("e1Date") && <TableHead>Exit 1 date</TableHead>}
+            {show("e2Price") && <TableHead>Exit 2 price (₹)</TableHead>}
+            {show("e2Qty") && <TableHead>Exit 2 qty/lot</TableHead>}
+            {show("e2Date") && <TableHead>Exit 2 date</TableHead>}
+            {show("e3Price") && <TableHead>Exit 3 price (₹)</TableHead>}
+            {show("e3Qty") && <TableHead>Exit 3 qty/lot</TableHead>}
+            {show("e3Date") && <TableHead>Exit 3 date</TableHead>}
             {show("openQty") && <TableHead>Open qty/lot</TableHead>}
             {show("exitedQty") && <TableHead>Exited qty/lot</TableHead>}
             {show("avgExitPrice") && <TableHead>Avg exit price</TableHead>}
@@ -273,10 +286,11 @@ export function TradeTable({
             {show("planFollowed") && <TableHead>Plan followed</TableHead>}
             {show("exitTrigger") && <TableHead>Exit trigger</TableHead>}
             {show("growthAreas") && <TableHead>Growth areas</TableHead>}
-            {show("capitalAtRisk") && <TableHead>Capital at risk</TableHead>}
+            {show("capitalAtRisk") && <TableHead>Open heat</TableHead>}
             {show("baseDuration") && <TableHead>Base duration</TableHead>}
-            {show("quickNote") && <TableHead>Quick note</TableHead>}
+            {show("quickNote") && <TableHead>Notes</TableHead>}
             {show("unrealized") && <TableHead>Unrealized P/L</TableHead>}
+            {show("brokerage") && <TableHead>Brokerage (₹)</TableHead>}
             {show("actions") && <TableHead>Actions</TableHead>}
           </tr>
         </thead>
@@ -373,15 +387,6 @@ export function TradeTable({
                     />
                   </td>
                 )}
-                {show("initialQty") && (
-                  <td className={`${cell} ${widths.initialQty}`}>
-                    <QtyInput
-                      value={trade.initialQty}
-                      onChange={(initialQty) => onUpdate(trade.id, { initialQty })}
-                      label="Initial quantity"
-                    />
-                  </td>
-                )}
                 {show("sl") && (
                   <td className={`${cell} ${widths.sl}`}>
                     <MoneyInput
@@ -431,12 +436,21 @@ export function TradeTable({
                     </select>
                   </td>
                 )}
+                {show("initialQty") && (
+                  <td className={`${cell} ${widths.initialQty}`}>
+                    <QtyInput
+                      value={trade.initialQty}
+                      onChange={(initialQty) => onUpdate(trade.id, { initialQty })}
+                      label="Initial quantity"
+                    />
+                  </td>
+                )}
                 {show("p1Price") && (
                   <td className={`${cell} ${widths.p1Price}`}>
                     <MoneyInput
                       value={trade.p1Price}
                       onChange={(p1Price) => onUpdate(trade.id, { p1Price })}
-                      label="Exit 1 price"
+                      label="Add 1 price"
                     />
                   </td>
                 )}
@@ -445,7 +459,7 @@ export function TradeTable({
                     <QtyInput
                       value={trade.p1Qty}
                       onChange={(p1Qty) => onUpdate(trade.id, { p1Qty })}
-                      label="Exit 1 quantity"
+                      label="Add 1 quantity"
                     />
                   </td>
                 )}
@@ -454,7 +468,7 @@ export function TradeTable({
                     <DateInput
                       value={trade.p1Date}
                       onChange={(p1Date) => onUpdate(trade.id, { p1Date })}
-                      label="Exit 1 date"
+                      label="Add 1 date"
                     />
                   </td>
                 )}
@@ -463,7 +477,7 @@ export function TradeTable({
                     <MoneyInput
                       value={trade.p1Sl}
                       onChange={(p1Sl) => onUpdate(trade.id, { p1Sl })}
-                      label="Exit 1 stop loss"
+                      label="Add 1 stop loss"
                     />
                   </td>
                 )}
@@ -472,7 +486,7 @@ export function TradeTable({
                     <MoneyInput
                       value={trade.p2Price}
                       onChange={(p2Price) => onUpdate(trade.id, { p2Price })}
-                      label="Exit 2 price"
+                      label="Add 2 price"
                     />
                   </td>
                 )}
@@ -481,7 +495,7 @@ export function TradeTable({
                     <QtyInput
                       value={trade.p2Qty}
                       onChange={(p2Qty) => onUpdate(trade.id, { p2Qty })}
-                      label="Exit 2 quantity"
+                      label="Add 2 quantity"
                     />
                   </td>
                 )}
@@ -490,7 +504,7 @@ export function TradeTable({
                     <DateInput
                       value={trade.p2Date}
                       onChange={(p2Date) => onUpdate(trade.id, { p2Date })}
-                      label="Exit 2 date"
+                      label="Add 2 date"
                     />
                   </td>
                 )}
@@ -499,34 +513,7 @@ export function TradeTable({
                     <MoneyInput
                       value={trade.p2Sl}
                       onChange={(p2Sl) => onUpdate(trade.id, { p2Sl })}
-                      label="P2 stop loss"
-                    />
-                  </td>
-                )}
-                {show("p3Price") && (
-                  <td className={`${cell} ${widths.p3Price}`}>
-                    <MoneyInput
-                      value={trade.p3Price}
-                      onChange={(p3Price) => onUpdate(trade.id, { p3Price })}
-                      label="Exit 3 price"
-                    />
-                  </td>
-                )}
-                {show("p3Qty") && (
-                  <td className={`${cell} ${widths.p3Qty}`}>
-                    <QtyInput
-                      value={trade.p3Qty}
-                      onChange={(p3Qty) => onUpdate(trade.id, { p3Qty })}
-                      label="Exit 3 quantity"
-                    />
-                  </td>
-                )}
-                {show("p3Date") && (
-                  <td className={`${cell} ${widths.p3Date}`}>
-                    <DateInput
-                      value={trade.p3Date}
-                      onChange={(p3Date) => onUpdate(trade.id, { p3Date })}
-                      label="Exit 3 date"
+                      label="Add 2 stop loss"
                     />
                   </td>
                 )}
@@ -588,6 +575,87 @@ export function TradeTable({
                     <MetricPill className={`font-semibold ${toneForNumber(-metric.slPercent || 0)}`}>
                       {formatPercent(metric.slPercent)}
                     </MetricPill>
+                  </td>
+                )}
+                {show("e1Price") && (
+                  <td className={`${cell} ${widths.e1Price}`}>
+                    <MoneyInput
+                      value={trade.e1Price}
+                      onChange={(e1Price) => onUpdate(trade.id, { e1Price })}
+                      label="Exit 1 price"
+                    />
+                  </td>
+                )}
+                {show("e1Qty") && (
+                  <td className={`${cell} ${widths.e1Qty}`}>
+                    <QtyInput
+                      value={trade.e1Qty}
+                      onChange={(e1Qty) => onUpdate(trade.id, { e1Qty })}
+                      label="Exit 1 quantity"
+                    />
+                  </td>
+                )}
+                {show("e1Date") && (
+                  <td className={`${cell} ${widths.e1Date}`}>
+                    <DateInput
+                      value={trade.e1Date}
+                      onChange={(e1Date) => onUpdate(trade.id, { e1Date })}
+                      label="Exit 1 date"
+                    />
+                  </td>
+                )}
+                {show("e2Price") && (
+                  <td className={`${cell} ${widths.e2Price}`}>
+                    <MoneyInput
+                      value={trade.e2Price}
+                      onChange={(e2Price) => onUpdate(trade.id, { e2Price })}
+                      label="Exit 2 price"
+                    />
+                  </td>
+                )}
+                {show("e2Qty") && (
+                  <td className={`${cell} ${widths.e2Qty}`}>
+                    <QtyInput
+                      value={trade.e2Qty}
+                      onChange={(e2Qty) => onUpdate(trade.id, { e2Qty })}
+                      label="Exit 2 quantity"
+                    />
+                  </td>
+                )}
+                {show("e2Date") && (
+                  <td className={`${cell} ${widths.e2Date}`}>
+                    <DateInput
+                      value={trade.e2Date}
+                      onChange={(e2Date) => onUpdate(trade.id, { e2Date })}
+                      label="Exit 2 date"
+                    />
+                  </td>
+                )}
+                {show("e3Price") && (
+                  <td className={`${cell} ${widths.e3Price}`}>
+                    <MoneyInput
+                      value={trade.e3Price}
+                      onChange={(e3Price) => onUpdate(trade.id, { e3Price })}
+                      label="Exit 3 price"
+                    />
+                  </td>
+                )}
+                {show("e3Qty") && (
+                  <td className={`${cell} ${widths.e3Qty}`}>
+                    <QtyInput
+                      value={trade.e3Qty}
+                      onChange={(e3Qty) => onUpdate(trade.id, { e3Qty })}
+                      label="Exit 3 quantity"
+                    />
+                  </td>
+                )}
+                {show("e3Date") && (
+                  <td className={`${cell} ${widths.e3Date}`}>
+                    <DateInput
+                      value={trade.e3Date}
+                      onChange={(e3Date) => onUpdate(trade.id, { e3Date })}
+                      label="Exit 3 date"
+                    />
                   </td>
                 )}
                 {show("openQty") && (
@@ -749,7 +817,7 @@ export function TradeTable({
                     <TextInput
                       value={trade.quickNote}
                       onChange={(quickNote) => onUpdate(trade.id, { quickNote })}
-                      label="Quick note"
+                      label="Notes"
                     />
                   </td>
                 )}
@@ -758,6 +826,15 @@ export function TradeTable({
                     <MetricPill className={`font-semibold ${toneForNumber(metric.unrealized)}`}>
                       {formatCurrency(metric.unrealized)}
                     </MetricPill>
+                  </td>
+                )}
+                {show("brokerage") && (
+                  <td className={`${cell} ${widths.brokerage}`}>
+                    <MoneyInput
+                      value={trade.brokerage}
+                      onChange={(brokerage) => onUpdate(trade.id, { brokerage })}
+                      label="Brokerage"
+                    />
                   </td>
                 )}
                 {show("actions") && (

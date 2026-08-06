@@ -14,6 +14,7 @@ export type Trade = {
   sl: number;
   cmp: number;
   entryType: string;
+  /** Scale-in / addition legs */
   p1Price: number;
   p1Qty: number;
   p1Date: string;
@@ -22,9 +23,16 @@ export type Trade = {
   p2Qty: number;
   p2Date: string;
   p2Sl: number;
-  p3Price: number;
-  p3Qty: number;
-  p3Date: string;
+  /** Partial exit legs */
+  e1Price: number;
+  e1Qty: number;
+  e1Date: string;
+  e2Price: number;
+  e2Qty: number;
+  e2Date: string;
+  e3Price: number;
+  e3Qty: number;
+  e3Date: string;
   tsl: number;
   tslGroups: string;
   peakAllocation: number;
@@ -35,6 +43,7 @@ export type Trade = {
   growthAreas: string;
   baseDuration: string;
   quickNote: string;
+  brokerage: number;
 };
 
 export type TradeMetric = Trade & {
@@ -95,9 +104,15 @@ const baseTrade: Omit<Trade, "id" | "tradeNo" | "date" | "name"> = {
   p2Qty: 0,
   p2Date: "",
   p2Sl: 0,
-  p3Price: 0,
-  p3Qty: 0,
-  p3Date: "",
+  e1Price: 0,
+  e1Qty: 0,
+  e1Date: "",
+  e2Price: 0,
+  e2Qty: 0,
+  e2Date: "",
+  e3Price: 0,
+  e3Qty: 0,
+  e3Date: "",
   tsl: 0,
   tslGroups: "",
   peakAllocation: 0,
@@ -108,6 +123,7 @@ const baseTrade: Omit<Trade, "id" | "tradeNo" | "date" | "name"> = {
   growthAreas: "",
   baseDuration: "",
   quickNote: "",
+  brokerage: 0,
 };
 
 export const demoTrades: Trade[] = [
@@ -137,9 +153,9 @@ export const demoTrades: Trade[] = [
     sl: 84.88,
     cmp: 93.28,
     entryType: "Anticipation",
-    p1Price: 91.32,
-    p1Qty: 20,
-    p1Date: "2026-07-27",
+    e1Price: 91.32,
+    e1Qty: 20,
+    e1Date: "2026-07-27",
     tsl: 90.5,
     tslGroups: "Group A",
     peakAllocation: 7.45,
@@ -175,9 +191,9 @@ export const demoTrades: Trade[] = [
     avgEntry: 251.85,
     initialQty: 150,
     cmp: 267.95,
-    p1Price: 254.62,
-    p1Qty: 80,
-    p1Date: "2026-07-31",
+    e1Price: 254.62,
+    e1Qty: 80,
+    e1Date: "2026-07-31",
     tsl: 260,
     peakAllocation: 10.8,
     planFollowed: "Partial",
@@ -209,27 +225,33 @@ export const tradeColumns = [
   { key: "side", label: "Buy/Sell" },
   { key: "entry", label: "Entry" },
   { key: "avgEntry", label: "Avg entry" },
-  { key: "initialQty", label: "Initial qty/lot" },
   { key: "sl", label: "SL" },
   { key: "cmp", label: "CMP" },
   { key: "entryType", label: "Entry type" },
-  { key: "p1Price", label: "Exit 1 price" },
-  { key: "p1Qty", label: "Exit 1 qty/lot" },
-  { key: "p1Date", label: "Exit 1 date" },
-  { key: "p1Sl", label: "Exit 1 SL" },
-  { key: "p2Price", label: "Exit 2 price" },
-  { key: "p2Qty", label: "Exit 2 qty/lot" },
-  { key: "p2Date", label: "Exit 2 date" },
-  { key: "p2Sl", label: "P2 SL" },
-  { key: "p3Price", label: "Exit 3 price" },
-  { key: "p3Qty", label: "Exit 3 qty/lot" },
-  { key: "p3Date", label: "Exit 3 date" },
+  { key: "initialQty", label: "Initial qty/lot" },
+  { key: "p1Price", label: "Add 1 price" },
+  { key: "p1Qty", label: "Add 1 qty/lot" },
+  { key: "p1Date", label: "Add 1 date" },
+  { key: "p1Sl", label: "Add 1 SL" },
+  { key: "p2Price", label: "Add 2 price" },
+  { key: "p2Qty", label: "Add 2 qty/lot" },
+  { key: "p2Date", label: "Add 2 date" },
+  { key: "p2Sl", label: "Add 2 SL" },
   { key: "tsl", label: "TSL" },
   { key: "tslGroups", label: "TSL groups" },
   { key: "positionSize", label: "Position size" },
-  { key: "currentAllocation", label: "Current allocation" },
-  { key: "peakAllocation", label: "Peak allocation" },
+  { key: "currentAllocation", label: "Current allocation (%)" },
+  { key: "peakAllocation", label: "Peak allocation (%)" },
   { key: "slPercent", label: "SL %" },
+  { key: "e1Price", label: "Exit 1 price" },
+  { key: "e1Qty", label: "Exit 1 qty/lot" },
+  { key: "e1Date", label: "Exit 1 date" },
+  { key: "e2Price", label: "Exit 2 price" },
+  { key: "e2Qty", label: "Exit 2 qty/lot" },
+  { key: "e2Date", label: "Exit 2 date" },
+  { key: "e3Price", label: "Exit 3 price" },
+  { key: "e3Qty", label: "Exit 3 qty/lot" },
+  { key: "e3Date", label: "Exit 3 date" },
   { key: "openQty", label: "Open qty/lot" },
   { key: "exitedQty", label: "Exited qty/lot" },
   { key: "avgExitPrice", label: "Avg exit price" },
@@ -244,10 +266,11 @@ export const tradeColumns = [
   { key: "planFollowed", label: "Plan followed" },
   { key: "exitTrigger", label: "Exit trigger" },
   { key: "growthAreas", label: "Growth areas" },
-  { key: "capitalAtRisk", label: "Capital at risk" },
+  { key: "capitalAtRisk", label: "Open heat" },
   { key: "baseDuration", label: "Base duration" },
-  { key: "quickNote", label: "Quick note" },
+  { key: "quickNote", label: "Notes" },
   { key: "unrealized", label: "Unrealized P/L" },
+  { key: "brokerage", label: "Brokerage" },
   { key: "actions", label: "Actions" },
 ] as const;
 
@@ -270,6 +293,11 @@ const finite = (value: unknown) => {
 };
 
 function normalizeTrade(trade: Record<string, unknown>): Trade {
+  // Legacy v1/v2 stored exits on p1/p2/p3. New model: p* = additions, e* = exits.
+  const hasExitFields =
+    "e1Price" in trade || "e1Qty" in trade || "e2Price" in trade || "e3Price" in trade;
+  const legacyExits = !hasExitFields;
+
   return {
     ...baseTrade,
     id: String(trade.id || crypto.randomUUID()),
@@ -284,17 +312,23 @@ function normalizeTrade(trade: Record<string, unknown>): Trade {
     sl: finite(trade.sl),
     cmp: finite(trade.cmp),
     entryType: String(trade.entryType || ""),
-    p1Price: finite(trade.p1Price),
-    p1Qty: finite(trade.p1Qty),
-    p1Date: String(trade.p1Date || ""),
-    p1Sl: finite(trade.p1Sl),
-    p2Price: finite(trade.p2Price),
-    p2Qty: finite(trade.p2Qty),
-    p2Date: String(trade.p2Date || ""),
-    p2Sl: finite(trade.p2Sl),
-    p3Price: finite(trade.p3Price),
-    p3Qty: finite(trade.p3Qty),
-    p3Date: String(trade.p3Date || ""),
+    p1Price: legacyExits ? 0 : finite(trade.p1Price),
+    p1Qty: legacyExits ? 0 : finite(trade.p1Qty),
+    p1Date: legacyExits ? "" : String(trade.p1Date || ""),
+    p1Sl: legacyExits ? 0 : finite(trade.p1Sl),
+    p2Price: legacyExits ? 0 : finite(trade.p2Price),
+    p2Qty: legacyExits ? 0 : finite(trade.p2Qty),
+    p2Date: legacyExits ? "" : String(trade.p2Date || ""),
+    p2Sl: legacyExits ? 0 : finite(trade.p2Sl),
+    e1Price: finite(hasExitFields ? trade.e1Price : trade.p1Price),
+    e1Qty: finite(hasExitFields ? trade.e1Qty : trade.p1Qty),
+    e1Date: String((hasExitFields ? trade.e1Date : trade.p1Date) || ""),
+    e2Price: finite(hasExitFields ? trade.e2Price : trade.p2Price),
+    e2Qty: finite(hasExitFields ? trade.e2Qty : trade.p2Qty),
+    e2Date: String((hasExitFields ? trade.e2Date : trade.p2Date) || ""),
+    e3Price: finite(hasExitFields ? trade.e3Price : trade.p3Price),
+    e3Qty: finite(hasExitFields ? trade.e3Qty : trade.p3Qty),
+    e3Date: String((hasExitFields ? trade.e3Date : trade.p3Date) || ""),
     tsl: finite(trade.tsl),
     tslGroups: String(trade.tslGroups || ""),
     peakAllocation: finite(trade.peakAllocation),
@@ -305,27 +339,29 @@ function normalizeTrade(trade: Record<string, unknown>): Trade {
     growthAreas: String(trade.growthAreas || ""),
     baseDuration: String(trade.baseDuration || ""),
     quickNote: String(trade.quickNote || ""),
+    brokerage: finite(trade.brokerage),
   };
 }
 
 export function calculateTrade(trade: Trade, now = new Date(), cummPF = 0): TradeMetric {
   const direction = trade.side === "Buy" ? 1 : -1;
-  const exitedQty = Math.min(trade.initialQty, trade.p1Qty + trade.p2Qty + trade.p3Qty);
+  const totalQty = trade.initialQty + trade.p1Qty + trade.p2Qty;
+  const exitedQty = Math.min(totalQty, trade.e1Qty + trade.e2Qty + trade.e3Qty);
   const remainingQty =
-    trade.positionStatus === "Closed" ? 0 : Math.max(0, trade.initialQty - exitedQty);
+    trade.positionStatus === "Closed" ? 0 : Math.max(0, totalQty - exitedQty);
   const averageEntry = trade.avgEntry || trade.entry;
   const exitNotional =
-    trade.p1Price * trade.p1Qty + trade.p2Price * trade.p2Qty + trade.p3Price * trade.p3Qty;
+    trade.e1Price * trade.e1Qty + trade.e2Price * trade.e2Qty + trade.e3Price * trade.e3Qty;
   const computedAvgExit = exitedQty
     ? exitNotional / exitedQty
     : trade.avgExitPrice || 0;
   const realized =
     direction *
-    ((trade.p1Price - averageEntry) * trade.p1Qty +
-      (trade.p2Price - averageEntry) * trade.p2Qty +
-      (trade.p3Price - averageEntry) * trade.p3Qty +
+    ((trade.e1Price - averageEntry) * trade.e1Qty +
+      (trade.e2Price - averageEntry) * trade.e2Qty +
+      (trade.e3Price - averageEntry) * trade.e3Qty +
       (trade.positionStatus === "Closed" && trade.avgExitPrice
-        ? (trade.avgExitPrice - averageEntry) * Math.max(0, trade.initialQty - exitedQty)
+        ? (trade.avgExitPrice - averageEntry) * Math.max(0, totalQty - exitedQty)
         : 0));
   const unrealized = direction * (trade.cmp - averageEntry) * remainingQty;
   const invested = averageEntry * remainingQty;
@@ -337,15 +373,15 @@ export function calculateTrade(trade: Trade, now = new Date(), cummPF = 0): Trad
   const start = new Date(`${trade.date}T00:00:00`);
   const endDate =
     trade.positionStatus === "Closed"
-      ? trade.p3Date || trade.p2Date || trade.p1Date || trade.date
+      ? trade.e3Date || trade.e2Date || trade.e1Date || trade.date
       : now.toISOString().slice(0, 10);
   const end = new Date(`${endDate}T00:00:00`);
   const holdingDays = Number.isNaN(start.valueOf())
     ? 0
     : Math.max(0, Math.round((end.valueOf() - start.valueOf()) / 86_400_000));
-  const grossPL = realized + unrealized;
+  const grossPL = realized + unrealized - (trade.brokerage || 0);
   const portfolioImpact = (grossPL * 100) / PORTFOLIO_CAPITAL;
-  const positionSize = averageEntry * trade.initialQty;
+  const positionSize = averageEntry * totalQty;
 
   return {
     ...trade,
@@ -424,14 +460,17 @@ export function formatPercent(value: number, digits = 2) {
 }
 
 export function serializeTrades(trades: Trade[]) {
-  return JSON.stringify({ version: 2, trades });
+  return JSON.stringify({ version: 3, trades });
 }
 
 export function parseStoredTrades(raw: string | null): Trade[] | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as { version?: number; trades?: unknown };
-    if ((parsed.version !== 1 && parsed.version !== 2) || !Array.isArray(parsed.trades)) {
+    if (
+      (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== 3) ||
+      !Array.isArray(parsed.trades)
+    ) {
       return null;
     }
     return parsed.trades
@@ -452,10 +491,10 @@ const csvFields: (keyof Trade)[] = [
   "side",
   "entry",
   "avgEntry",
-  "initialQty",
   "sl",
   "cmp",
   "entryType",
+  "initialQty",
   "p1Price",
   "p1Qty",
   "p1Date",
@@ -464,12 +503,18 @@ const csvFields: (keyof Trade)[] = [
   "p2Qty",
   "p2Date",
   "p2Sl",
-  "p3Price",
-  "p3Qty",
-  "p3Date",
   "tsl",
   "tslGroups",
   "peakAllocation",
+  "e1Price",
+  "e1Qty",
+  "e1Date",
+  "e2Price",
+  "e2Qty",
+  "e2Date",
+  "e3Price",
+  "e3Qty",
+  "e3Date",
   "avgExitPrice",
   "positionStatus",
   "planFollowed",
@@ -477,6 +522,7 @@ const csvFields: (keyof Trade)[] = [
   "growthAreas",
   "baseDuration",
   "quickNote",
+  "brokerage",
 ];
 
 const numericCsvFields = new Set<keyof Trade>([
@@ -492,11 +538,16 @@ const numericCsvFields = new Set<keyof Trade>([
   "p2Price",
   "p2Qty",
   "p2Sl",
-  "p3Price",
-  "p3Qty",
+  "e1Price",
+  "e1Qty",
+  "e2Price",
+  "e2Qty",
+  "e3Price",
+  "e3Qty",
   "tsl",
   "peakAllocation",
   "avgExitPrice",
+  "brokerage",
 ]);
 
 const csvEscape = (value: unknown) => {

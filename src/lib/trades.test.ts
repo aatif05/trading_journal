@@ -56,7 +56,8 @@ describe("local persistence", () => {
 
     expect(parseStoredTrades(serialized)).toEqual(demoTrades);
     expect(parseStoredTrades('{"version":1,"trades":[]}')).toEqual([]);
-    expect(parseStoredTrades('{"version":3,"trades":[]}')).toBeNull();
+    expect(parseStoredTrades('{"version":3,"trades":[]}')).toEqual([]);
+    expect(parseStoredTrades('{"version":4,"trades":[]}')).toBeNull();
     expect(parseStoredTrades("not-json")).toBeNull();
   });
 
@@ -78,9 +79,43 @@ describe("local persistence", () => {
     });
     const migrated = parseStoredTrades(legacy);
 
-    expect(migrated?.[0].p3Qty).toBe(0);
+    expect(migrated?.[0].e3Qty).toBe(0);
     expect(migrated?.[0].tslGroups).toBe("");
     expect(migrated?.[0].quickNote).toBe("");
+    expect(migrated?.[0].brokerage).toBe(0);
+  });
+
+  it("migrates legacy exit fields from p* to e*", () => {
+    const legacy = JSON.stringify({
+      version: 2,
+      trades: [
+        {
+          id: "legacy-exit",
+          tradeNo: 2,
+          date: "2026-07-01",
+          name: "EXIT",
+          entry: 10,
+          avgEntry: 10,
+          initialQty: 100,
+          cmp: 12,
+          p1Price: 11,
+          p1Qty: 40,
+          p1Date: "2026-07-02",
+          p2Price: 12,
+          p2Qty: 30,
+          p3Price: 13,
+          p3Qty: 20,
+        },
+      ],
+    });
+    const migrated = parseStoredTrades(legacy);
+
+    expect(migrated?.[0].e1Price).toBe(11);
+    expect(migrated?.[0].e1Qty).toBe(40);
+    expect(migrated?.[0].e2Qty).toBe(30);
+    expect(migrated?.[0].e3Qty).toBe(20);
+    expect(migrated?.[0].p1Qty).toBe(0);
+    expect(migrated?.[0].p2Qty).toBe(0);
   });
 });
 
