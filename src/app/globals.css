@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f8fa;
+  --foreground: #17201b;
+  --muted: #747d77;
+  --line: #e8ebe9;
+  --green: #15955f;
+  --green-soft: #eaf8f1;
+  --amber: #dc8a08;
+  --red: #e14f69;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: #ccebdd;
+}
+
+.journal-scrollbar {
+  scrollbar-color: #cbd1cd transparent;
+  scrollbar-width: thin;
+}
+
+.journal-scrollbar::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.journal-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd1cd;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+.cell-control {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f8f9f8;
+  padding: 6px 9px;
+  color: #273029;
+  outline: none;
+  transition: border-color 120ms, background-color 120ms, box-shadow 120ms;
+}
+
+.cell-control:hover {
+  background: #f2f5f3;
+}
+
+.cell-control:focus {
+  border-color: #9ed5bc;
+  background: #fff;
+  box-shadow: 0 0 0 3px #e7f5ee;
+}
+
+.cell-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
