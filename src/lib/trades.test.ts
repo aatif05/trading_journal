@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculatePortfolio,
   calculateTrade,
-  demoTrades,
+  createTrade,
   parseStoredTrades,
   serializeTrades,
   tradesFromCsv,
@@ -10,17 +10,21 @@ import {
   type Trade,
 } from "./trades";
 
+const sampleTrade = (overrides: Partial<Trade> = {}): Trade => ({
+  ...createTrade([]),
+  ...overrides,
+});
+
 describe("trade calculations", () => {
   it("calculates open-position P/L, risk, and holding days", () => {
-    const trade: Trade = {
-      ...demoTrades[0],
+    const trade = sampleTrade({
       entry: 100,
       avgEntry: 100,
       initialQty: 10,
       sl: 95,
       cmp: 110,
       date: "2026-08-01",
-    };
+    });
 
     const metric = calculateTrade(trade, new Date("2026-08-06T12:00:00Z"));
 
@@ -32,29 +36,32 @@ describe("trade calculations", () => {
   });
 
   it("uses only closed positions to calculate win rate", () => {
-    const winner: Trade = {
-      ...demoTrades[0],
+    const winner = sampleTrade({
       id: "winner",
       positionStatus: "Closed",
       avgEntry: 100,
       initialQty: 10,
       avgExitPrice: 110,
-    };
-    const loser: Trade = {
-      ...winner,
+    });
+    const loser = sampleTrade({
       id: "loser",
+      positionStatus: "Closed",
+      avgEntry: 100,
+      initialQty: 10,
       avgExitPrice: 90,
-    };
+    });
+    const open = sampleTrade({ id: "open", positionStatus: "Open" });
 
-    expect(calculatePortfolio([winner, loser, demoTrades[1]]).winRate).toBe(50);
+    expect(calculatePortfolio([winner, loser, open]).winRate).toBe(50);
   });
 });
 
 describe("local persistence", () => {
   it("round-trips saved trades and rejects invalid payloads", () => {
-    const serialized = serializeTrades(demoTrades);
+    const trades = [sampleTrade({ name: "ACME", tradeNo: 1 })];
+    const serialized = serializeTrades(trades);
 
-    expect(parseStoredTrades(serialized)).toEqual(demoTrades);
+    expect(parseStoredTrades(serialized)).toEqual(trades);
     expect(parseStoredTrades('{"version":1,"trades":[]}')).toEqual([]);
     expect(parseStoredTrades('{"version":3,"trades":[]}')).toEqual([]);
     expect(parseStoredTrades('{"version":4,"trades":[]}')).toBeNull();
@@ -121,7 +128,7 @@ describe("local persistence", () => {
 
 describe("CSV portability", () => {
   it("round-trips commas and quotes in text fields", () => {
-    const source = [{ ...demoTrades[0], name: 'ACME, "INDIA"' }];
+    const source = [sampleTrade({ name: 'ACME, "INDIA"', entry: 42.5 })];
     const imported = tradesFromCsv(tradesToCsv(source));
 
     expect(imported).toHaveLength(1);

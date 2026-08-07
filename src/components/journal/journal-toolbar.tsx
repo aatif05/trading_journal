@@ -7,7 +7,6 @@ import {
   FileDown,
   Plus,
   RefreshCw,
-  RotateCcw,
   Search,
   Upload,
 } from "lucide-react";
@@ -30,7 +29,6 @@ type Props = {
   trades: Trade[];
   onImport: (trades: Trade[]) => void;
   onAdd: () => void;
-  onReset: () => void;
   onRefreshPrices?: () => void;
   refreshingPrices?: boolean;
 };
@@ -48,7 +46,6 @@ export function JournalToolbar({
   trades,
   onImport,
   onAdd,
-  onReset,
   onRefreshPrices,
   refreshingPrices = false,
 }: Props) {
@@ -70,10 +67,6 @@ export function JournalToolbar({
     const imported = tradesFromCsv(await file.text());
     if (imported.length) onImport(imported);
     event.target.value = "";
-  };
-
-  const confirmReset = () => {
-    if (window.confirm("Replace your current journal with the demo trades?")) onReset();
   };
 
   return (
@@ -143,9 +136,6 @@ export function JournalToolbar({
           title="Refresh open trade CMPs"
         >
           <RefreshCw className={`h-4 w-4 ${refreshingPrices ? "animate-spin" : ""}`} />
-        </button>
-        <button className={iconButton} onClick={confirmReset} aria-label="Reset demo data" title="Reset demo data">
-          <RotateCcw className="h-4 w-4" />
         </button>
         <button
           className={`${iconButton} bg-[#17201b] text-white hover:bg-[#2c3931] hover:text-white`}

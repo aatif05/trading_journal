@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   createTrade,
-  demoTrades,
   LEGACY_STORAGE_KEY,
   parseStoredTrades,
   serializeTrades,
@@ -12,7 +11,7 @@ import {
 } from "@/lib/trades";
 
 export function useTrades() {
-  const [trades, setTrades] = useState<Trade[]>(demoTrades);
+  const [trades, setTrades] = useState<Trade[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -57,8 +56,6 @@ export function useTrades() {
     setTrades((current) => current.filter((trade) => trade.id !== id));
   }, []);
 
-  const reset = useCallback(() => setTrades(demoTrades), []);
-
   return {
     trades,
     setTrades,
@@ -67,6 +64,5 @@ export function useTrades() {
     updateTrade,
     updateCmps,
     deleteTrade,
-    reset,
   };
 }

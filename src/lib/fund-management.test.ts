@@ -6,12 +6,16 @@ import {
   serializeCapitalFlows,
   updateCapitalFlow,
 } from "./fund-management";
-import { calculatePortfolio, demoTrades, type Trade } from "./trades";
+import { calculatePortfolio, createTrade, type Trade } from "./trades";
+
+const sampleTrade = (overrides: Partial<Trade> = {}): Trade => ({
+  ...createTrade([]),
+  ...overrides,
+});
 
 describe("fund management calculations", () => {
   it("chains monthly capital flows and closed-trade P/L", () => {
-    const winner: Trade = {
-      ...demoTrades[0],
+    const winner = sampleTrade({
       id: "feb-winner",
       date: "2026-01-20",
       positionStatus: "Closed",
@@ -20,7 +24,7 @@ describe("fund management calculations", () => {
       e1Price: 110,
       e1Qty: 10,
       e1Date: "2026-02-03",
-    };
+    });
     const flows = {
       "2026-01": { added: 500, withdrawn: 0 },
       "2026-02": { added: 100, withdrawn: 50 },
@@ -53,8 +57,7 @@ describe("fund management calculations", () => {
   });
 
   it("derives current capital from flows and booked P/L", () => {
-    const winner: Trade = {
-      ...demoTrades[0],
+    const winner = sampleTrade({
       id: "closed-winner",
       date: "2026-06-10",
       positionStatus: "Closed",
@@ -63,7 +66,7 @@ describe("fund management calculations", () => {
       e1Price: 110,
       e1Qty: 10,
       e1Date: "2026-06-20",
-    };
+    });
     const flows = {
       "2026-06": { added: 5_000, withdrawn: 0 },
       "2026-07": { added: 1_000, withdrawn: 500 },
@@ -78,7 +81,8 @@ describe("fund management calculations", () => {
   });
 
   it("reports zero percentages when no capital is recorded", () => {
-    const metrics = calculatePortfolio(demoTrades, calculateCurrentCapital(demoTrades, {}));
+    const open = sampleTrade({ positionStatus: "Open", initialQty: 5, avgEntry: 100 });
+    const metrics = calculatePortfolio([open], calculateCurrentCapital([open], {}));
 
     expect(metrics.capital).toBe(0);
     expect(metrics.investedPercent).toBe(0);
@@ -87,7 +91,13 @@ describe("fund management calculations", () => {
   });
 
   it("ignores open trades in monthly attribution", () => {
-    const rows = calculateFundYear(demoTrades, {}, 2026, 350_000);
+    const open = sampleTrade({
+      date: "2026-06-01",
+      positionStatus: "Open",
+      initialQty: 10,
+      avgEntry: 100,
+    });
+    const rows = calculateFundYear([open], {}, 2026, 350_000);
 
     expect(rows.every((row) => !row.hasTrades)).toBe(true);
     expect(rows[11].finalCapital).toBe(350_000);

@@ -21,7 +21,6 @@ export default function Home() {
     updateTrade,
     updateCmps,
     deleteTrade,
-    reset,
   } = useTrades();
   const { flows, hydrated: flowsHydrated } = useCapitalFlows();
   const hydrated = tradesHydrated && flowsHydrated;
@@ -111,7 +110,6 @@ export default function Home() {
           trades={trades}
           onImport={(imported) => setTrades((current) => [...current, ...imported])}
           onAdd={addTrade}
-          onReset={reset}
           onRefreshPrices={refreshOpenTrades}
           refreshingPrices={refreshingAll}
         />

@@ -128,85 +128,8 @@ const baseTrade: Omit<Trade, "id" | "tradeNo" | "date" | "name"> = {
   brokerage: 0,
 };
 
-export const demoTrades: Trade[] = [
-  {
-    ...baseTrade,
-    id: "demo-apollo",
-    tradeNo: 18,
-    date: "2026-07-23",
-    name: "APOLLO",
-    entry: 402.45,
-    avgEntry: 402.45,
-    initialQty: 50,
-    cmp: 399.05,
-    peakAllocation: 5.75,
-    baseDuration: "Swing",
-  },
-  {
-    ...baseTrade,
-    id: "demo-lloyds",
-    tradeNo: 20,
-    date: "2026-07-24",
-    name: "LLOYDSENGG",
-    setup: "Continuation",
-    entry: 88.7,
-    avgEntry: 89.96,
-    initialQty: 290,
-    sl: 84.88,
-    cmp: 93.28,
-    entryType: "Anticipation",
-    e1Price: 91.32,
-    e1Qty: 20,
-    e1Date: "2026-07-27",
-    tsl: 90.5,
-    tslGroups: "Group A",
-    peakAllocation: 7.45,
-    planFollowed: "Yes",
-    exitTrigger: "Partial book",
-    growthAreas: "Entry timing",
-    baseDuration: "Swing",
-    quickNote: "Trail after P1",
-  },
-  {
-    ...baseTrade,
-    id: "demo-gabriel",
-    tradeNo: 21,
-    date: "2026-07-27",
-    name: "GABRIEL",
-    setup: "Pullback",
-    entry: 1408.37,
-    avgEntry: 1408.37,
-    initialQty: 45,
-    sl: 1369,
-    cmp: 1587.7,
-    peakAllocation: 18.1,
-    baseDuration: "Positional",
-    quickNote: "Strong sector flow",
-  },
-  {
-    ...baseTrade,
-    id: "demo-stallion",
-    tradeNo: 22,
-    date: "2026-07-27",
-    name: "STALLION",
-    entry: 250.56,
-    avgEntry: 251.85,
-    initialQty: 150,
-    cmp: 267.95,
-    e1Price: 254.62,
-    e1Qty: 80,
-    e1Date: "2026-07-31",
-    tsl: 260,
-    peakAllocation: 10.8,
-    planFollowed: "Partial",
-    exitTrigger: "TSL",
-    growthAreas: "Size discipline",
-    baseDuration: "Swing",
-  },
-];
-
-export const setupOptions = ["", "Breakout", "Continuation", "Pullback", "Reversal"];
-export const entryTypeOptions = ["", "Anticipation", "Confirmation", "Retest"];
+export const setupOptions = ["", "Breakout", "Continuation", "Pullback", "Reversal","EP"];
+export const entryTypeOptions = ["", "Anticipation", "Confirmation", "Retest", "PDH","SVRO"];
 export const planFollowedOptions = ["", "Yes", "No", "Partial"];
 export const exitTriggerOptions = [
   "",
@@ -216,6 +139,9 @@ export const exitTriggerOptions = [
   "Partial book",
   "Manual",
   "Time stop",
+  "Random",
+  "Panic Sell",
+  "Market Pressure"
 ];
 export const durationOptions = ["", "Intraday", "Swing", "Positional", "Long term"];
 
