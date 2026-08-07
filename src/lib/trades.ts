@@ -1,6 +1,5 @@
 export type TradeSide = "Buy" | "Sell";
-export type PositionStatus = "Open" | "Closed";
-
+export type PositionStatus = "Open" | "Closed" | "Partial";
 export type Trade = {
   id: string;
   tradeNo: number;
@@ -141,7 +140,8 @@ export const exitTriggerOptions = [
   "Time stop",
   "Random",
   "Panic Sell",
-  "Market Pressure"
+  "Market Pressure",
+  "Failed BO"
 ];
 export const durationOptions = ["", "Intraday", "Swing", "Positional", "Long term"];
 
