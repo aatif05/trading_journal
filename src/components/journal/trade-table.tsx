@@ -732,6 +732,7 @@ export function TradeTable({
                     >
                       <option>Open</option>
                       <option>Closed</option>
+                      <option>Partial</option>
                     </select>
                   </td>
                 )}

@@ -284,63 +284,89 @@ export function calculateTrade(
   cummPF = 0,
   capital = 0,
 ): TradeMetric {
-  const direction = trade.side === "Buy" ? 1 : -1;
-  const totalQty = trade.initialQty + trade.p1Qty + trade.p2Qty;
-  const exitedQty = Math.min(totalQty, trade.e1Qty + trade.e2Qty + trade.e3Qty);
-  const remainingQty =
-    trade.positionStatus === "Closed" ? 0 : Math.max(0, totalQty - exitedQty);
-  const averageEntry = trade.avgEntry || trade.entry;
+  // Numeric conversions to avoid string math bugs
+  const entryPrice = Number(trade.avgEntry || trade.entry || 0);
+  const tslPrice = trade.tsl ? Number(trade.tsl) : 0;
+  const slPrice = trade.sl ? Number(trade.sl) : 0;
+  const cmp = Number(trade.cmp || 0);
+
+  const totalQty = Number(trade.initialQty || 0) + Number(trade.p1Qty || 0) + Number(trade.p2Qty || 0);
+  const totalExitedQty = Number(trade.e1Qty || 0) + Number(trade.e2Qty || 0) + Number(trade.e3Qty || 0);
+  
+  const exitedQty = Math.min(totalQty, totalExitedQty);
+
+  // --- Dynamic Position Status Logic ---
+  let positionStatus = trade.positionStatus || "Open";
+  if (totalQty > 0) {
+    if (exitedQty >= totalQty) {
+      positionStatus = "Closed";
+    } else if (exitedQty > 0) {
+      positionStatus = "Partial";
+    } else {
+      positionStatus = "Open";
+    }
+  }
+
+  const remainingQty = positionStatus === "Closed" ? 0 : Math.max(0, totalQty - exitedQty);
+
   const exitNotional =
-    trade.e1Price * trade.e1Qty + trade.e2Price * trade.e2Qty + trade.e3Price * trade.e3Qty;
+    Number(trade.e1Price || 0) * Number(trade.e1Qty || 0) +
+    Number(trade.e2Price || 0) * Number(trade.e2Qty || 0) +
+    Number(trade.e3Price || 0) * Number(trade.e3Qty || 0);
+
   const computedAvgExit = exitedQty
     ? exitNotional / exitedQty
-    : trade.avgExitPrice || 0;
+    : Number(trade.avgExitPrice || 0);
+
   const realized =
-    direction *
-    ((trade.e1Price - averageEntry) * trade.e1Qty +
-      (trade.e2Price - averageEntry) * trade.e2Qty +
-      (trade.e3Price - averageEntry) * trade.e3Qty +
-      (trade.positionStatus === "Closed" && trade.avgExitPrice
-        ? (trade.avgExitPrice - averageEntry) * Math.max(0, totalQty - exitedQty)
-        : 0));
-  const unrealized = direction * (trade.cmp - averageEntry) * remainingQty;
-  const invested = averageEntry * remainingQty;
-  const initialRisk = trade.sl ? Math.abs(averageEntry - trade.sl) * remainingQty : 0;
-  const protectedPerShare =
-    trade.sl && direction * (trade.sl - averageEntry) > 0
-      ? Math.abs(trade.sl - averageEntry)
-      : 0;
+    (Number(trade.e1Price || 0) - entryPrice) * Number(trade.e1Qty || 0) +
+    (Number(trade.e2Price || 0) - entryPrice) * Number(trade.e2Qty || 0) +
+    (Number(trade.e3Price || 0) - entryPrice) * Number(trade.e3Qty || 0) +
+    (positionStatus === "Closed" && trade.avgExitPrice
+      ? (Number(trade.avgExitPrice) - entryPrice) * Math.max(0, totalQty - exitedQty)
+      : 0);
+
+  const unrealized = (cmp - entryPrice) * remainingQty;
+  const invested = entryPrice * remainingQty;
+  const initialRisk = slPrice ? Math.abs(entryPrice - slPrice) * remainingQty : 0;
+
+  // Profit Protected (Long Only): TSL must be above entry price
+  const protectedPerShare = tslPrice > entryPrice ? tslPrice - entryPrice : 0;
+  const profitProtected = protectedPerShare * remainingQty;
+
   const start = new Date(`${trade.date}T00:00:00`);
   const endDate =
-    trade.positionStatus === "Closed"
+    positionStatus === "Closed"
       ? trade.e3Date || trade.e2Date || trade.e1Date || trade.date
       : now.toISOString().slice(0, 10);
   const end = new Date(`${endDate}T00:00:00`);
   const holdingDays = Number.isNaN(start.valueOf())
     ? 0
     : Math.max(0, Math.round((end.valueOf() - start.valueOf()) / 86_400_000));
-  const grossPL = realized + unrealized - (trade.brokerage || 0);
+
+  const grossPL = realized + unrealized - Number(trade.brokerage || 0);
   const portfolioImpact = shareOfCapital(grossPL, capital);
-  const positionSize = averageEntry * totalQty;
+  const positionSize = entryPrice * totalQty;
 
   return {
     ...trade,
+    positionStatus, // Now dynamic: "Closed" | "Partial" | "Open"
     exitedQty,
     openQty: remainingQty,
     remainingQty,
     invested,
     capitalAtRisk: initialRisk,
-    profitProtected: protectedPerShare * remainingQty,
+    profitProtected,
     unrealized,
     realized,
     grossPL,
-    stockMove: averageEntry ? (direction * (trade.cmp - averageEntry) * 100) / averageEntry : 0,
+    stockMove: entryPrice ? ((cmp - entryPrice) * 100) / entryPrice : 0,
     rewardRisk: initialRisk ? unrealized / initialRisk : 0,
     holdingDays,
     portfolioImpact,
     positionSize,
     currentAllocation: shareOfCapital(invested, capital),
-    slPercent: averageEntry && trade.sl ? (Math.abs(averageEntry - trade.sl) * 100) / averageEntry : 0,
+    slPercent: entryPrice && slPrice ? (Math.abs(entryPrice - slPrice) * 100) / entryPrice : 0,
     computedAvgExit,
     cummPF: cummPF + portfolioImpact,
   };
