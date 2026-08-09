@@ -90,6 +90,20 @@ export function usePriceRefresh(
     }
   }, [applyPrices, trades]);
 
+  // AUTO-REFRESH: Runs every 5 minutes automatically
+  useEffect(() => {
+    const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
+    const intervalId = setInterval(() => {
+      // Only trigger auto-refresh if a refresh isn't already running
+      if (!refreshingAll) {
+        refreshOpenTrades();
+      }
+    }, FIVE_MINUTES_MS);
+
+    return () => clearInterval(intervalId);
+  }, [refreshOpenTrades, refreshingAll]);
+  
   return {
     refreshTrade,
     refreshOpenTrades,
