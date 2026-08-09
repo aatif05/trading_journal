@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback,useEffect, useState } from "react";
 import { fetchLatestPrices, normalizeSymbol } from "@/lib/prices";
 import { Trade } from "@/lib/trades";
 
@@ -103,7 +103,7 @@ export function usePriceRefresh(
 
     return () => clearInterval(intervalId);
   }, [refreshOpenTrades, refreshingAll]);
-  
+
   return {
     refreshTrade,
     refreshOpenTrades,
