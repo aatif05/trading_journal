@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { useTrades } from "@/hooks/use-trades";
 import { useCapitalFlows } from "@/hooks/use-capital-flows";
 import { calculateAnalytics, calculatePerformanceSeries, calculateTopPerformers } from "@/lib/analytics";
@@ -133,6 +134,7 @@ export function AnalyticsDashboard() {
 
         <div className="flex items-center gap-2 text-xs text-[#8b948e]"><Info className="size-4" /> Analytics use closed-trade results and your recorded capital flows.</div>
       </div>
+      <BottomNav />
     </main>
   );
 }
