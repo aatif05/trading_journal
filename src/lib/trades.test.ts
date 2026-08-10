@@ -35,6 +35,31 @@ describe("trade calculations", () => {
     expect(metric.holdingDays).toBe(5);
   });
 
+  it("derives open, partial, and closed status from quantities", () => {
+    const open = sampleTrade({ initialQty: 10, e1Qty: 0, positionStatus: "Closed" });
+    const partial = sampleTrade({ initialQty: 10, e1Qty: 4, e1Price: 110, positionStatus: "Open" });
+    const closed = sampleTrade({ initialQty: 10, e1Qty: 10, e1Price: 110, positionStatus: "Open" });
+
+    expect(calculateTrade(open).positionStatus).toBe("Open");
+    expect(calculateTrade(partial).positionStatus).toBe("Partial");
+    expect(calculateTrade(closed).positionStatus).toBe("Closed");
+  });
+
+  it("calculates open heat across scale-in legs and remaining quantity", () => {
+    const trade = sampleTrade({
+      entry: 100,
+      initialQty: 10,
+      sl: 95,
+      p1Price: 120,
+      p1Qty: 5,
+      p1Sl: 110,
+      e1Qty: 5,
+      e1Price: 125,
+    });
+
+    expect(calculateTrade(trade).capitalAtRisk).toBeCloseTo(200 / 3);
+  });
+
   it("uses only closed positions to calculate win rate", () => {
     const winner = sampleTrade({
       id: "winner",

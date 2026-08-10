@@ -33,7 +33,7 @@ const finiteNonNegative = (value: unknown) => {
 };
 
 function closedMonth(trade: Trade) {
-  if (trade.positionStatus !== "Closed") return null;
+  if (calculateTrade(trade).positionStatus !== "Closed") return null;
 
   // Attribute a closed trade once, to its latest exit date. Trades closed only
   // with avgExitPrice fall back to their journal date.

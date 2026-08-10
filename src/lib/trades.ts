@@ -261,7 +261,12 @@ function normalizeTrade(trade: Record<string, unknown>): Trade {
     tslGroups: String(trade.tslGroups || ""),
     peakAllocation: finite(trade.peakAllocation),
     avgExitPrice: finite(trade.avgExitPrice),
-    positionStatus: trade.positionStatus === "Closed" ? "Closed" : "Open",
+    positionStatus:
+      trade.positionStatus === "Closed"
+        ? "Closed"
+        : trade.positionStatus === "Partial"
+          ? "Partial"
+          : "Open",
     planFollowed: String(trade.planFollowed || ""),
     exitTrigger: String(trade.exitTrigger || ""),
     growthAreas: String(trade.growthAreas || ""),
@@ -298,7 +303,10 @@ export function calculateTrade(
   // --- Dynamic Position Status Logic ---
   let positionStatus = trade.positionStatus || "Open";
   if (totalQty > 0) {
-    if (exitedQty >= totalQty) {
+    if (
+      exitedQty >= totalQty ||
+      (exitedQty === 0 && trade.positionStatus === "Closed" && Number(trade.avgExitPrice) > 0)
+    ) {
       positionStatus = "Closed";
     } else if (exitedQty > 0) {
       positionStatus = "Partial";
@@ -328,7 +336,16 @@ export function calculateTrade(
 
   const unrealized = (cmp - entryPrice) * remainingQty;
   const invested = entryPrice * remainingQty;
-  const initialRisk = slPrice ? Math.abs(entryPrice - slPrice) * remainingQty : 0;
+  const entryLegs = [
+    { price: Number(trade.entry || 0), qty: Number(trade.initialQty || 0), stop: slPrice },
+    { price: Number(trade.p1Price || 0), qty: Number(trade.p1Qty || 0), stop: Number(trade.p1Sl || 0) || slPrice },
+    { price: Number(trade.p2Price || 0), qty: Number(trade.p2Qty || 0), stop: Number(trade.p2Sl || 0) || slPrice },
+  ];
+  const fullPositionRisk = entryLegs.reduce(
+    (risk, leg) => risk + (leg.stop ? Math.abs(leg.price - leg.stop) * leg.qty : 0),
+    0,
+  );
+  const initialRisk = totalQty > 0 ? (fullPositionRisk * remainingQty) / totalQty : 0;
 
   // Profit Protected (Long Only): TSL must be above entry price
   const protectedPerShare = tslPrice > entryPrice ? tslPrice - entryPrice : 0;
@@ -399,7 +416,7 @@ export function calculatePortfolio(trades: Trade[], capital = 0): PortfolioMetri
 
   return {
     totalTrades: rows.length,
-    openPositions: rows.filter((trade) => trade.positionStatus === "Open").length,
+    openPositions: rows.filter((trade) => trade.positionStatus !== "Closed").length,
     winRate: closed.length
       ? (closed.filter((trade) => trade.grossPL > 0).length * 100) / closed.length
       : 0,
@@ -580,7 +597,12 @@ export function tradesFromCsv(csv: string): Trade[] {
       }
     }
     trade.side = trade.side === "Sell" ? "Sell" : "Buy";
-    trade.positionStatus = trade.positionStatus === "Closed" ? "Closed" : "Open";
+    trade.positionStatus =
+      trade.positionStatus === "Closed"
+        ? "Closed"
+        : trade.positionStatus === "Partial"
+          ? "Partial"
+          : "Open";
     return trade;
   });
 }

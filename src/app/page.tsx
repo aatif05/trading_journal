@@ -10,7 +10,13 @@ import { useCapitalFlows } from "@/hooks/use-capital-flows";
 import { usePriceRefresh } from "@/hooks/use-price-refresh";
 import { useTrades } from "@/hooks/use-trades";
 import { calculateCurrentCapital } from "@/lib/fund-management";
-import { calculatePortfolio, ColumnKey, formatCurrency, tradeColumns } from "@/lib/trades";
+import {
+  calculatePortfolio,
+  calculateTrade,
+  ColumnKey,
+  formatCurrency,
+  tradeColumns,
+} from "@/lib/trades";
 
 export default function Home() {
   const {
@@ -25,7 +31,7 @@ export default function Home() {
   const { flows, hydrated: flowsHydrated } = useCapitalFlows();
   const hydrated = tradesHydrated && flowsHydrated;
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"All" | "Open" | "Closed">("Open");
+  const [status, setStatus] = useState<"All" | "Open" | "Partial" | "Closed">("Open");
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
     () => new Set(tradeColumns.map((column) => column.key)),
   );
@@ -46,7 +52,8 @@ export default function Home() {
   const filteredTrades = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return trades.filter((trade) => {
-      const matchesStatus = status === "All" || trade.positionStatus === status;
+      const matchesStatus =
+        status === "All" || calculateTrade(trade).positionStatus === status;
       const matchesQuery =
         !normalizedQuery ||
         trade.name.toLowerCase().includes(normalizedQuery) ||
