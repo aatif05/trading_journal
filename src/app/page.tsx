@@ -72,6 +72,13 @@ export default function Home() {
     });
   };
 
+  const handleAddTrade = () => {
+    const createdTrade = addTrade();
+    if (createdTrade?.name && createdTrade.name !== "NEW TRADE") {
+      void refreshTrade(createdTrade);
+    }
+  };
+
   const fetchedLabel = lastFetchedAt
     ? new Intl.DateTimeFormat("en-IN", {
         hour: "2-digit",
@@ -116,7 +123,7 @@ export default function Home() {
           onToggleColumn={toggleColumn}
           trades={trades}
           onImport={(imported) => setTrades((current) => [...current, ...imported])}
-          onAdd={addTrade}
+          onAdd={handleAddTrade}
           onRefreshPrices={refreshOpenTrades}
           refreshingPrices={refreshingAll}
         />

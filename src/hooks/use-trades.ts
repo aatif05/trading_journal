@@ -33,7 +33,13 @@ export function useTrades() {
   }, [hydrated, trades]);
 
   const addTrade = useCallback(() => {
-    setTrades((current) => [...current, createTrade(current)]);
+    let createdTrade: Trade | undefined;
+    setTrades((current) => {
+      const nextTrade = createTrade(current);
+      createdTrade = nextTrade;
+      return [...current, nextTrade];
+    });
+    return createdTrade;
   }, []);
 
   const updateTrade = useCallback((id: string, patch: Partial<Trade>) => {
