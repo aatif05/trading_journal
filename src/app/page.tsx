@@ -54,11 +54,18 @@ export default function Home() {
     return trades.filter((trade) => {
       const matchesStatus =
         status === "All" || calculateTrade(trade).positionStatus === status;
+      const searchableText = [
+        trade.name,
+        trade.setup,
+        trade.entryType,
+        trade.quickNote,
+        trade.tslGroups,
+        trade.tradeNo,
+      ]
+        .map((value) => String(value ?? "").trim().toLowerCase())
+        .join(" ");
       const matchesQuery =
-        !normalizedQuery ||
-        trade.name.toLowerCase().includes(normalizedQuery) ||
-        trade.setup.toLowerCase().includes(normalizedQuery) ||
-        String(trade.tradeNo).includes(normalizedQuery);
+        !normalizedQuery || searchableText.includes(normalizedQuery);
       return matchesStatus && matchesQuery;
     });
   }, [query, status, trades]);
