@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays, Info, RefreshCw, Trash2 } from "lucide-react";
+import { useState } from "react";
 import {
   calculateTradeMetrics,
   ColumnKey,
@@ -116,20 +117,33 @@ function QtyInput({
   value,
   onChange,
   label,
+  commitOnBlur = false,
 }: {
   value: number;
   onChange: (value: number) => void;
   label: string;
+  commitOnBlur?: boolean;
 }) {
+  const [draft, setDraft] = useState(value ? String(value) : "");
+
   return (
     <input
       className="cell-control cell-number"
       type="number"
       min="0"
       step="1"
-      value={value || ""}
+      value={commitOnBlur ? draft : value || ""}
       placeholder="0"
-      onChange={(event) => onChange(Number(event.target.value))}
+      onChange={(event) => {
+        if (commitOnBlur) setDraft(event.target.value);
+        else onChange(Number(event.target.value));
+      }}
+      onBlur={() => {
+        if (commitOnBlur) {
+          const nextValue = Number(draft);
+          onChange(Number.isFinite(nextValue) ? nextValue : 0);
+        }
+      }}
       aria-label={label}
     />
   );
@@ -605,8 +619,9 @@ export function TradeTable({
                   <td className={`${cell} ${widths.e1Qty}`}>
                     <QtyInput
                       value={trade.e1Qty}
-                      onChange={(e1Qty) => onUpdate(trade.id, { e1Qty })}
-                      label="Exit 1 quantity"
+onChange={(e1Qty) => onUpdate(trade.id, { e1Qty })}
+                          commitOnBlur
+                          label="Exit 1 quantity"
                     />
                   </td>
                 )}
@@ -632,8 +647,9 @@ export function TradeTable({
                   <td className={`${cell} ${widths.e2Qty}`}>
                     <QtyInput
                       value={trade.e2Qty}
-                      onChange={(e2Qty) => onUpdate(trade.id, { e2Qty })}
-                      label="Exit 2 quantity"
+onChange={(e2Qty) => onUpdate(trade.id, { e2Qty })}
+                          commitOnBlur
+                          label="Exit 2 quantity"
                     />
                   </td>
                 )}
@@ -659,8 +675,9 @@ export function TradeTable({
                   <td className={`${cell} ${widths.e3Qty}`}>
                     <QtyInput
                       value={trade.e3Qty}
-                      onChange={(e3Qty) => onUpdate(trade.id, { e3Qty })}
-                      label="Exit 3 quantity"
+onChange={(e3Qty) => onUpdate(trade.id, { e3Qty })}
+                          commitOnBlur
+                          label="Exit 3 quantity"
                     />
                   </td>
                 )}
