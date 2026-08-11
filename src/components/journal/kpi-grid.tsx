@@ -110,8 +110,9 @@ export function KpiGrid({ metrics, rows = [] }: { metrics: PortfolioMetrics; row
                 {label === "Gross realized P/L" && <label className="flex items-center gap-2 normal-case font-medium text-[#929795]"><input type="checkbox" className="size-4 accent-[#15955f]" /> Group symbols</label>}
               </div>
               <ul className="flex flex-col gap-2.5 pt-3">{items.map((item) => {
-                const [name, amount] = item.split(" · ");
-                return <li key={item} className="flex items-start justify-between gap-3 text-[13px] font-semibold text-[#7d817f]"><span className="min-w-0 truncate">{name}</span><span className={`shrink-0 text-right font-bold ${amount.includes("-") ? "text-[#e14f69]" : "text-[#4c9a68]"}`}>{amount}</span></li>;
+                const [name, ...amountParts] = item.split(" · ");
+                const amount = amountParts.join(" · ") || "";
+                return <li key={item} className="flex items-start justify-between gap-3 text-[13px] font-semibold text-[#7d817f]"><span className="min-w-0 truncate">{name}</span>{amount && <span className={`shrink-0 text-right font-bold ${amount.includes("-") ? "text-[#e14f69]" : "text-[#4c9a68]"}`}>{amount}</span>}</li>;
               })}</ul>
             </div>
           )}
