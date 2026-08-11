@@ -13,6 +13,7 @@ import { calculateCurrentCapital } from "@/lib/fund-management";
 import {
   calculatePortfolio,
   calculateTrade,
+  calculateTradeMetrics,
   ColumnKey,
   formatCurrency,
   tradeColumns,
@@ -31,7 +32,7 @@ export default function Home() {
   const { flows, hydrated: flowsHydrated } = useCapitalFlows();
   const hydrated = tradesHydrated && flowsHydrated;
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"All" | "Open" | "Partial" | "Closed">("Open");
+  const [status, setStatus] = useState<"All" | "Active" | "Open" | "Partial" | "Closed">("Active");
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
     () => new Set(tradeColumns.map((column) => column.key)),
   );
@@ -48,12 +49,16 @@ export default function Home() {
 
   const capital = useMemo(() => calculateCurrentCapital(trades, flows), [flows, trades]);
   const metrics = useMemo(() => calculatePortfolio(trades, capital), [capital, trades]);
+  const tradeMetrics = useMemo(() => calculateTradeMetrics(trades, new Date(), capital), [capital, trades]);
 
   const filteredTrades = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return trades.filter((trade) => {
+      const positionStatus = calculateTrade(trade).positionStatus;
       const matchesStatus =
-        status === "All" || calculateTrade(trade).positionStatus === status;
+        status === "All" ||
+        (status === "Active" && positionStatus !== "Closed") ||
+        positionStatus === status;
       const searchableText = [
         trade.name,
         trade.setup,
@@ -160,7 +165,7 @@ export default function Home() {
           </div>
         )}
 
-        <KpiGrid metrics={metrics} />
+        <KpiGrid metrics={metrics} rows={tradeMetrics} />
 
         <section className="overflow-hidden rounded-2xl border border-[#e5e9e6] bg-white shadow-[0_2px_8px_rgba(24,40,30,0.035)]">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e9ecea] bg-[#fbfcfb] px-4 py-2.5 text-[10px] text-[#777f7a]">
