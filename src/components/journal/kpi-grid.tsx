@@ -65,10 +65,34 @@ function detailFor(label: string, rows: TradeMetric[], metrics: PortfolioMetrics
       .slice(0, 5)
       .map((row) => `${row.name || "Unnamed"} · ${formatCurrency(row.unrealized, 0)} (${formatPercent(row.portfolioImpact)})`);
   }
-  if (label === "Profit protected") return [`Protected ${formatCurrency(metrics.profitProtected, 0)}`, `${formatPercent(metrics.profitProtectedPercent)} of capital`];
-  if (label === "Gross PF impact % (all-time)") return [`Realized impact ${formatPercent(metrics.grossImpact)}`, `${formatCurrency(metrics.realizedPL, 0)} realized`];
-  if (label === "Current DD (pre-tax)") return [`Drawdown ${formatPercent(metrics.currentDrawdown)}`, "Based on current portfolio value"];
-  if (label === "Profit risk") return [`Risk ${formatPercent(metrics.capitalAtRiskPercent)}`, `${formatCurrency(metrics.capitalAtRisk, 0)} open heat`];
+  if (label === "Profit protected") {
+    return rows
+      .filter((row) => row.positionStatus !== "Closed" && row.profitProtected > 0)
+      .sort((a, b) => b.profitProtected - a.profitProtected)
+      .slice(0, 5)
+      .map((row) => `${row.name || "Unnamed"} · ${formatCurrency(row.profitProtected, 0)}`);
+  }
+  if (label === "Gross PF impact % (all-time)") {
+    return rows
+      .filter((row) => row.positionStatus === "Closed" && row.realized !== 0)
+      .sort((a, b) => Math.abs(b.portfolioImpact) - Math.abs(a.portfolioImpact))
+      .slice(0, 5)
+      .map((row) => `${row.name || "Unnamed"} · ${formatPercent(row.portfolioImpact)}`);
+  }
+  if (label === "Current DD (pre-tax)") {
+    return rows
+      .filter((row) => row.positionStatus !== "Closed" && row.unrealized < 0)
+      .sort((a, b) => a.unrealized - b.unrealized)
+      .slice(0, 5)
+      .map((row) => `${row.name || "Unnamed"} · ${formatCurrency(row.unrealized, 0)}`);
+  }
+  if (label === "Profit risk") {
+    return rows
+      .filter((row) => row.positionStatus !== "Closed" && row.capitalAtRisk > 0)
+      .sort((a, b) => b.capitalAtRisk - a.capitalAtRisk)
+      .slice(0, 5)
+      .map((row) => `${row.name || "Unnamed"} · ${formatCurrency(row.capitalAtRisk, 0)}`);
+  }
   return [`${metrics.totalTrades} trades recorded`, "Select another card for a breakdown"];
 }
 
