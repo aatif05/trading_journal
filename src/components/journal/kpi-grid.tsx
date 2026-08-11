@@ -113,15 +113,15 @@ export function KpiGrid({ metrics, rows = [] }: { metrics: PortfolioMetrics; row
   ];
 
   return (
-    <section aria-label="Portfolio summary" className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
+    <section aria-label="Portfolio summary" className="relative z-50 grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
       {cards.map(({ label, value, detail, tone = "neutral", icon: Icon, items }) => (
-        <div key={label} className="relative">
+        <div key={label} className={`relative ${openLabel === label ? "z-[70]" : "z-0"}`}>
           <button type="button" onClick={() => setOpenLabel(openLabel === label ? null : label)} className="block w-full rounded-2xl border border-[#e8ebe9] bg-white p-3.5 text-left shadow-[0_1px_3px_rgba(20,40,30,0.04)] transition hover:border-[#bfd6c8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8bc8aa]">
-            <div className="flex items-start justify-between gap-2"><p className="text-[10px] font-semibold uppercase tracking-[0.045em] text-[#89918c]">{label}</p><span className="rounded-full bg-[#f5f7f6] p-1.5 text-[#a9b1ac]"><Icon className="h-3.5 w-3.5" /></span></div>
-            <div className="mt-2 flex flex-wrap items-baseline gap-1.5"><p className={`text-[17px] font-bold tabular-nums ${tones[tone]}`}>{value}</p>{detail && <p className="text-[9px] text-[#929a95]">({detail})</p>}</div>
+            <div className="flex items-start justify-between gap-2"><p className="text-[8px] font-semibold uppercase tracking-[0.045em] text-[#89918c]">{label}</p><span className="rounded-full bg-[#f5f7f6] p-1.5 text-[#a9b1ac]"><Icon className="h-3.5 w-3.5" /></span></div>
+            <div className="mt-2 flex flex-wrap items-baseline gap-1.5"><p className={`text-[10px] font-bold tabular-nums ${tones[tone]}`}>{value}</p>{detail && <p className="text-[7px] text-[#929a95]">({detail})</p>}</div>
           </button>
           {openLabel === label && (
-            <div role="dialog" aria-label={`${label} details`} className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-30 rounded-[18px] border border-[#cbdced] bg-white px-4 pb-4 pt-4 shadow-[0_16px_36px_rgba(22,35,28,0.16)] sm:min-w-[300px]">
+            <div role="dialog" aria-label={`${label} details`} className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-[80] rounded-[18px] border border-[#cbdced] bg-white px-4 pb-4 pt-4 shadow-[0_16px_36px_rgba(22,35,28,0.16)] sm:min-w-[300px]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#b5b8b7]">{label === "Gross realized P/L" ? "Gross PF impact" : label === "Unrealized P/L" ? "Unrealized PF impact" : label}</p>
