@@ -336,10 +336,12 @@ export function calculateTrade(
 
   const unrealized = (cmp - entryPrice) * remainingQty;
   const invested = entryPrice * remainingQty;
+  const effectiveStop = (baseStop: number) =>
+    tslPrice > 0 ? Math.max(baseStop, tslPrice) : baseStop;
   const entryLegs = [
-    { price: Number(trade.entry || 0), qty: Number(trade.initialQty || 0), stop: slPrice },
-    { price: Number(trade.p1Price || 0), qty: Number(trade.p1Qty || 0), stop: Number(trade.p1Sl || 0) || slPrice },
-    { price: Number(trade.p2Price || 0), qty: Number(trade.p2Qty || 0), stop: Number(trade.p2Sl || 0) || slPrice },
+    { price: Number(trade.entry || 0), qty: Number(trade.initialQty || 0), stop: effectiveStop(slPrice) },
+    { price: Number(trade.p1Price || 0), qty: Number(trade.p1Qty || 0), stop: effectiveStop(Number(trade.p1Sl || 0) || slPrice) },
+    { price: Number(trade.p2Price || 0), qty: Number(trade.p2Qty || 0), stop: effectiveStop(Number(trade.p2Sl || 0) || slPrice) },
   ];
   const fullPositionRisk = entryLegs.reduce(
     (risk, leg) => risk + (leg.stop ? Math.abs(leg.price - leg.stop) * leg.qty : 0),

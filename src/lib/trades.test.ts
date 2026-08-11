@@ -45,6 +45,18 @@ describe("trade calculations", () => {
     expect(calculateTrade(closed).positionStatus).toBe("Closed");
   });
 
+  it("reduces open heat when a tighter trailing stop is entered", () => {
+    const trade = sampleTrade({
+      entry: 100,
+      initialQty: 10,
+      sl: 90,
+      tsl: 98,
+      cmp: 110,
+    });
+
+    expect(calculateTrade(trade).capitalAtRisk).toBe(20);
+  });
+
   it("calculates open heat across scale-in legs and remaining quantity", () => {
     const trade = sampleTrade({
       entry: 100,
