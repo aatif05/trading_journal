@@ -90,7 +90,25 @@ export function KpiGrid({ metrics, rows = [] }: { metrics: PortfolioMetrics; row
             <div className="flex items-start justify-between gap-2"><p className="text-[10px] font-semibold uppercase tracking-[0.045em] text-[#89918c]">{label}</p><span className="rounded-full bg-[#f5f7f6] p-1.5 text-[#a9b1ac]"><Icon className="h-3.5 w-3.5" /></span></div>
             <div className="mt-2 flex flex-wrap items-baseline gap-1.5"><p className={`text-[17px] font-bold tabular-nums ${tones[tone]}`}>{value}</p>{detail && <p className="text-[9px] text-[#929a95]">({detail})</p>}</div>
           </button>
-          {openLabel === label && <div role="dialog" aria-label={`${label} details`} className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-30 rounded-2xl border border-[#cbdced] bg-white p-4 shadow-[0_14px_34px_rgba(22,35,28,0.14)]"><p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#89918c]">Quick look</p><ul className="mt-2 flex flex-col gap-2 text-xs text-[#4e5952]">{items.map((item) => <li key={item} className="border-b border-[#eef1ef] pb-2 last:border-0 last:pb-0">{item}</li>)}</ul></div>}
+          {openLabel === label && (
+            <div role="dialog" aria-label={`${label} details`} className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-30 rounded-[18px] border border-[#cbdced] bg-white px-4 pb-4 pt-4 shadow-[0_16px_36px_rgba(22,35,28,0.16)] sm:min-w-[300px]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#b5b8b7]">{label === "Gross realized P/L" ? "Gross PF impact" : label}</p>
+                  <p className="mt-1 text-[11px] font-medium text-[#adb1af]">{label === "Gross realized P/L" ? "Capital-weighted impact of realized trades." : "A quick breakdown of this portfolio metric."}</p>
+                </div>
+                <p className={`shrink-0 text-[16px] font-bold tabular-nums ${tones[tone]}`}>{label === "Gross realized P/L" ? formatPercent(metrics.grossImpact) : value}</p>
+              </div>
+              <div className="mt-4 flex items-center justify-between border-b border-[#eef1ef] pb-2 text-[12px] font-bold uppercase text-[#3e4654]">
+                <span>{label === "Gross realized P/L" ? "Top realized" : "Breakdown"}</span>
+                {label === "Gross realized P/L" && <label className="flex items-center gap-2 normal-case font-medium text-[#929795]"><input type="checkbox" className="size-4 accent-[#15955f]" /> Group symbols</label>}
+              </div>
+              <ul className="flex flex-col gap-2.5 pt-3">{items.map((item) => {
+                const [name, amount] = item.split(" · ");
+                return <li key={item} className="flex items-start justify-between gap-3 text-[13px] font-semibold text-[#7d817f]"><span className="min-w-0 truncate">{name}</span><span className="shrink-0 text-right font-bold text-[#4c9a68]">{amount}</span></li>;
+              })}</ul>
+            </div>
+          )}
         </div>
       ))}
     </section>
