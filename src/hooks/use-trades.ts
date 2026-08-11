@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createTrade,
   LEGACY_STORAGE_KEY,
@@ -12,6 +12,7 @@ import {
 
 export function useTrades() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const tradesRef = useRef<Trade[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -19,7 +20,10 @@ export function useTrades() {
       parseStoredTrades(window.localStorage.getItem(STORAGE_KEY)) ??
       parseStoredTrades(window.localStorage.getItem(LEGACY_STORAGE_KEY));
     const hydrate = window.setTimeout(() => {
-      if (stored) setTrades(stored);
+      if (stored) {
+        tradesRef.current = stored;
+        setTrades(stored);
+      }
       setHydrated(true);
     }, 0);
     return () => window.clearTimeout(hydrate);
@@ -33,13 +37,11 @@ export function useTrades() {
   }, [hydrated, trades]);
 
   const addTrade = useCallback(() => {
-    let createdTrade: Trade | undefined;
-    setTrades((current) => {
-      const nextTrade = createTrade(current);
-      createdTrade = nextTrade;
-      return [...current, nextTrade];
-    });
-    return createdTrade;
+    const nextTrade = createTrade(tradesRef.current);
+    const nextTrades = [...tradesRef.current, nextTrade];
+    tradesRef.current = nextTrades;
+    setTrades(nextTrades);
+    return nextTrade;
   }, []);
 
   const updateTrade = useCallback((id: string, patch: Partial<Trade>) => {
