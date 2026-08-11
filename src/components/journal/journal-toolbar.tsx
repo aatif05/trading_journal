@@ -22,8 +22,8 @@ import {
 type Props = {
   query: string;
   onQueryChange: (query: string) => void;
-  status: "All" | "Open" | "Partial" | "Closed";
-  onStatusChange: (status: "All" | "Open" | "Partial" | "Closed") => void;
+  status: "All" | "Active" | "Open" | "Partial" | "Closed";
+  onStatusChange: (status: "All" | "Active" | "Open" | "Partial" | "Closed") => void;
   visibleColumns: Set<ColumnKey>;
   onToggleColumn: (key: ColumnKey) => void;
   trades: Trade[];
@@ -90,13 +90,14 @@ export function JournalToolbar({
             value={status}
             onChange={(event) =>
               onStatusChange(
-                event.target.value as "All" | "Open" | "Partial" | "Closed",
+                event.target.value as "All" | "Active" | "Open" | "Partial" | "Closed",
               )
             }
             className="bg-transparent font-semibold outline-none"
             aria-label="Filter by trade status"
           >
             <option>All</option>
+            <option>Active</option>
             <option>Open</option>
             <option>Partial</option>
             <option>Closed</option>
