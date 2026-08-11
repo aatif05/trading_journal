@@ -58,7 +58,13 @@ function detailFor(label: string, rows: TradeMetric[], metrics: PortfolioMetrics
   if (label === "Capital at risk") {
     return rows.filter((row) => row.positionStatus !== "Closed" && row.capitalAtRisk > 0).sort((a, b) => b.capitalAtRisk - a.capitalAtRisk).slice(0, 5).map((row) => `${row.name || "Unnamed"} · ${formatCurrency(row.capitalAtRisk, 0)}`);
   }
-  if (label === "Unrealized P/L") return [`Open P/L ${formatCurrency(metrics.unrealizedPL, 0)}`, `${rows.filter((row) => row.positionStatus !== "Closed").length} active positions`];
+  if (label === "Unrealized P/L") {
+    return rows
+      .filter((row) => row.positionStatus !== "Closed")
+      .sort((a, b) => Math.abs(b.unrealized) - Math.abs(a.unrealized))
+      .slice(0, 5)
+      .map((row) => `${row.name || "Unnamed"} · ${formatCurrency(row.unrealized, 0)} (${formatPercent(row.portfolioImpact)})`);
+  }
   if (label === "Profit protected") return [`Protected ${formatCurrency(metrics.profitProtected, 0)}`, `${formatPercent(metrics.profitProtectedPercent)} of capital`];
   if (label === "Gross PF impact % (all-time)") return [`Realized impact ${formatPercent(metrics.grossImpact)}`, `${formatCurrency(metrics.realizedPL, 0)} realized`];
   if (label === "Current DD (pre-tax)") return [`Drawdown ${formatPercent(metrics.currentDrawdown)}`, "Based on current portfolio value"];
@@ -94,8 +100,8 @@ export function KpiGrid({ metrics, rows = [] }: { metrics: PortfolioMetrics; row
             <div role="dialog" aria-label={`${label} details`} className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-30 rounded-[18px] border border-[#cbdced] bg-white px-4 pb-4 pt-4 shadow-[0_16px_36px_rgba(22,35,28,0.16)] sm:min-w-[300px]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#b5b8b7]">{label === "Gross realized P/L" ? "Gross PF impact" : label}</p>
-                  <p className="mt-1 text-[11px] font-medium text-[#adb1af]">{label === "Gross realized P/L" ? "Capital-weighted impact of realized trades." : "A quick breakdown of this portfolio metric."}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#b5b8b7]">{label === "Gross realized P/L" ? "Gross PF impact" : label === "Unrealized P/L" ? "Unrealized PF impact" : label}</p>
+                  <p className="mt-1 text-[11px] font-medium text-[#adb1af]">{label === "Gross realized P/L" ? "Capital-weighted impact of realized trades." : label === "Unrealized P/L" ? "Capital-weighted impact of active trades." : "A quick breakdown of this portfolio metric."}</p>
                 </div>
                 <p className={`shrink-0 text-[16px] font-bold tabular-nums ${tones[tone]}`}>{label === "Gross realized P/L" ? formatPercent(metrics.grossImpact) : value}</p>
               </div>
@@ -105,7 +111,7 @@ export function KpiGrid({ metrics, rows = [] }: { metrics: PortfolioMetrics; row
               </div>
               <ul className="flex flex-col gap-2.5 pt-3">{items.map((item) => {
                 const [name, amount] = item.split(" · ");
-                return <li key={item} className="flex items-start justify-between gap-3 text-[13px] font-semibold text-[#7d817f]"><span className="min-w-0 truncate">{name}</span><span className="shrink-0 text-right font-bold text-[#4c9a68]">{amount}</span></li>;
+                return <li key={item} className="flex items-start justify-between gap-3 text-[13px] font-semibold text-[#7d817f]"><span className="min-w-0 truncate">{name}</span><span className={`shrink-0 text-right font-bold ${amount.includes("-") ? "text-[#e14f69]" : "text-[#4c9a68]"}`}>{amount}</span></li>;
               })}</ul>
             </div>
           )}
