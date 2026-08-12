@@ -377,7 +377,11 @@ export function TradeTable({
                 {show("setup") && (
                   <td className={`${cell} ${widths.setup}`}>
                     <select
-                      className="cell-control"
+                      className={`cell-control rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.04em] ${
+                        trade.setup
+                          ? "border-[#b9dfca] bg-[#eaf8f1] text-[#188b5b]"
+                          : "border-[#e8ebe9] bg-[#fbfcfb] text-[#8a928d]"
+                      }`}
                       value={trade.setup}
                       onChange={(event) => onUpdate(trade.id, { setup: event.target.value })}
                       aria-label="Trade setup"
