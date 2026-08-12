@@ -45,6 +45,19 @@ describe("trade calculations", () => {
     expect(calculateTrade(closed).positionStatus).toBe("Closed");
   });
 
+  it("keeps reward risk based on the original stop when TSL locks profit", () => {
+    const trade = sampleTrade({
+      entry: 2704.57,
+      avgEntry: 2704.57,
+      initialQty: 1,
+      sl: 2648,
+      tsl: 2705,
+      cmp: 2800.1,
+    });
+
+    expect(calculateTrade(trade).rewardRisk).toBeCloseTo(95.53 / 56.57, 2);
+  });
+
   it("reduces open heat when a tighter trailing stop is entered", () => {
     const trade = sampleTrade({
       entry: 100,

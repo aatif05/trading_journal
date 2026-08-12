@@ -347,7 +347,14 @@ export function calculateTrade(
     (risk, leg) => risk + (leg.stop ? Math.abs(leg.price - leg.stop) * leg.qty : 0),
     0,
   );
+  const originalPositionRisk = entryLegs.reduce(
+    (risk, leg) =>
+      risk + (leg.price > 0 && slPrice > 0 ? Math.abs(leg.price - slPrice) * leg.qty : 0),
+    0,
+  );
   const initialRisk = totalQty > 0 ? (fullPositionRisk * remainingQty) / totalQty : 0;
+  const rewardRiskDenominator =
+    totalQty > 0 ? (originalPositionRisk * remainingQty) / totalQty : 0;
 
   // Profit Protected (Long Only): TSL must be above entry price
   const protectedPerShare = tslPrice > entryPrice ? tslPrice - entryPrice : 0;
@@ -380,7 +387,7 @@ export function calculateTrade(
     realized,
     grossPL,
     stockMove: entryPrice ? ((cmp - entryPrice) * 100) / entryPrice : 0,
-    rewardRisk: initialRisk ? unrealized / initialRisk : 0,
+    rewardRisk: rewardRiskDenominator ? unrealized / rewardRiskDenominator : 0,
     holdingDays,
     portfolioImpact,
     positionSize,
