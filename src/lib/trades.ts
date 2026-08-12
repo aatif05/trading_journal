@@ -127,7 +127,7 @@ const baseTrade: Omit<Trade, "id" | "tradeNo" | "date" | "name"> = {
   brokerage: 0,
 };
 
-export const setupOptions = ["", "Breakout", "Continuation", "Pullback", "Reversal","EP"];
+export const setupOptions = ["", "Breakout", "Continuation", "Pullback", "Reversal", "EP", "FLAG"];
 export const entryTypeOptions = ["", "Anticipation", "Confirmation", "Retest", "PDH","SVRO"];
 export const planFollowedOptions = ["", "Yes", "No", "Partial"];
 export const exitTriggerOptions = [
