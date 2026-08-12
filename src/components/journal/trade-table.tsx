@@ -177,17 +177,27 @@ function TextInput({
   onChange,
   label,
   className = "",
+  commitOnBlur = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   label: string;
   className?: string;
+  commitOnBlur?: boolean;
 }) {
+  const [draft, setDraft] = useState(value);
+
   return (
     <input
       className={`cell-control ${className}`}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
+      value={commitOnBlur ? draft : value}
+      onChange={(event) => {
+        if (commitOnBlur) setDraft(event.target.value);
+        else onChange(event.target.value);
+      }}
+      onBlur={() => {
+        if (commitOnBlur && draft !== value) onChange(draft);
+      }}
       aria-label={label}
     />
   );
@@ -359,6 +369,7 @@ export function TradeTable({
                       className="font-semibold uppercase"
                       value={trade.name}
                       onChange={(name) => onUpdate(trade.id, { name: name.toUpperCase() })}
+                      commitOnBlur
                       label="Stock name"
                     />
                   </td>
