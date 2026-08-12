@@ -16,6 +16,7 @@ import {
   calculateTradeMetrics,
   ColumnKey,
   formatCurrency,
+  Trade,
   tradeColumns,
 } from "@/lib/trades";
 
@@ -85,9 +86,16 @@ export default function Home() {
   };
 
   const handleAddTrade = () => {
-    const createdTrade = addTrade();
-    if (createdTrade?.name && createdTrade.name !== "NEW TRADE") {
-      void refreshTrade(createdTrade);
+    addTrade();
+  };
+
+  const handleUpdateTrade = (id: string, patch: Partial<Trade>) => {
+    updateTrade(id, patch);
+    if (patch.name?.trim() && patch.name.trim().toUpperCase() !== "NEW TRADE") {
+      const existingTrade = trades.find((trade) => trade.id === id);
+      if (existingTrade) {
+        void refreshTrade({ ...existingTrade, ...patch });
+      }
     }
   };
 
@@ -182,7 +190,7 @@ export default function Home() {
             trades={filteredTrades}
             capital={capital}
             visibleColumns={visibleColumns}
-            onUpdate={updateTrade}
+            onUpdate={handleUpdateTrade}
             onDelete={deleteTrade}
             onRefreshCmp={refreshTrade}
             refreshingIds={refreshingIds}
