@@ -118,7 +118,7 @@ export function calculateTopPerformers(trades: Trade[], limit = 5): TopPerformer
   const metrics = calculateTradeMetrics(trades, new Date(), 0);
   const sorted = [...metrics]
     .filter((t) => t.positionStatus === "Closed")
-    .sort((a, b) => Math.abs(b.grossPL) - Math.abs(a.grossPL))
+    .sort((a, b) => b.grossPL - a.grossPL)
     .slice(0, limit * 2);
 
   return sorted

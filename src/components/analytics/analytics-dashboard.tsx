@@ -122,11 +122,23 @@ export function AnalyticsDashboard() {
             </div>
           </Panel>
 
-          <Panel title="Top performers">
-            <div className="flex flex-col gap-3 p-5">
-              {performers.length ? performers.map((performer) => {
+          <Panel title="Top performers" className="overflow-hidden">
+            <div className="flex flex-col gap-2 p-4 sm:p-5">
+              {performers.length ? performers.map((performer, index) => {
                 const isPositive = performer.gain >= 0;
-                return <article key={`${performer.name}-${performer.date}`} className="rounded-2xl border border-[#edf0ee] p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{performer.name || "Unnamed trade"}</p><p className="mt-1 text-xs text-[#8a938d]">{performer.date || "No date"} · {performer.side}</p></div><p className={`font-semibold ${isPositive ? "text-[#00945a]" : "text-[#e33d48]"}`}>{isPositive ? "+" : ""}{formatPercent(performer.gainPercent)}</p></div><div className="mt-4 flex items-center justify-between text-xs text-[#8a938d]"><span>Trade impact</span><span className="font-medium text-[#4e5751]">{formatPercent(performer.impact)}</span></div></article>;
+                return (
+                  <article key={`${performer.name}-${performer.date}`} className="flex items-center gap-3 rounded-2xl border border-[#edf0ee] bg-[#fcfdfc] p-3 transition-colors hover:bg-[#f7faf8]">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#edf7f1] text-xs font-bold text-[#4d8d69]">{index + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-[#202421]">{performer.name || "Unnamed trade"}</p>
+                      <p className="mt-1 truncate text-xs text-[#8a938d]">{performer.date || "No date"} · {performer.side}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className={`text-sm font-bold tabular-nums ${isPositive ? "text-[#00945a]" : "text-[#e33d48]"}`}>{isPositive ? "+" : ""}{formatPercent(performer.gainPercent)}</p>
+                      <p className="mt-1 text-[11px] text-[#8a938d]">Impact {formatPercent(performer.impact)}</p>
+                    </div>
+                  </article>
+                );
               }) : <div className="rounded-2xl bg-[#f6f8f6] p-5 text-sm leading-6 text-[#7b847e]">Your top performers will appear after you record closed trades.</div>}
             </div>
           </Panel>
