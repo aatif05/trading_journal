@@ -16,6 +16,26 @@ const sampleTrade = (overrides: Partial<Trade> = {}): Trade => ({
 });
 
 describe("trade calculations", () => {
+  it("calculates weighted average entry from all entry legs", () => {
+    const trade = sampleTrade({
+      entry: 100,
+      avgEntry: 999,
+      initialQty: 10,
+      p1Price: 120,
+      p1Qty: 5,
+      p2Price: 90,
+      p2Qty: 5,
+    });
+
+    expect(calculateTrade(trade).avgEntry).toBe(102.5);
+  });
+
+  it("recalculates average entry when a scale-in leg changes", () => {
+    const trade = sampleTrade({ entry: 100, initialQty: 10, p1Price: 120, p1Qty: 10 });
+
+    expect(calculateTrade(trade).avgEntry).toBe(110);
+  });
+
   it("calculates open-position P/L, risk, and holding days", () => {
     const trade = sampleTrade({
       entry: 100,
@@ -68,6 +88,13 @@ describe("trade calculations", () => {
     });
 
     expect(calculateTrade(trade).capitalAtRisk).toBe(20);
+  });
+
+  it("removes open heat when TSL moves above entry", () => {
+    const trade = sampleTrade({ entry: 100, initialQty: 10, sl: 90, tsl: 101, cmp: 110 });
+
+    expect(calculateTrade(trade).capitalAtRisk).toBe(0);
+    expect(calculateTrade(trade).profitProtected).toBe(10);
   });
 
   it("calculates open heat across scale-in legs and remaining quantity", () => {

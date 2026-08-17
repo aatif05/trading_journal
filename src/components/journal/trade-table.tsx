@@ -424,11 +424,9 @@ export function TradeTable({
                 )}
                 {show("avgEntry") && (
                   <td className={`${cell} ${widths.avgEntry}`}>
-                    <MoneyInput
-                      value={trade.avgEntry}
-                      onChange={(avgEntry) => onUpdate(trade.id, { avgEntry })}
-                      label="Average entry price"
-                    />
+                    <MetricPill className="text-[#3e4741]">
+                      {trade.avgEntry > 0 ? formatCurrency(trade.avgEntry) : "—"}
+                    </MetricPill>
                   </td>
                 )}
                 {show("sl") && (

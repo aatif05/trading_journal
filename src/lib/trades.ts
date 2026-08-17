@@ -290,12 +290,25 @@ export function calculateTrade(
   capital = 0,
 ): TradeMetric {
   // Numeric conversions to avoid string math bugs
-  const entryPrice = Number(trade.avgEntry || trade.entry || 0);
   const tslPrice = trade.tsl ? Number(trade.tsl) : 0;
   const slPrice = trade.sl ? Number(trade.sl) : 0;
   const cmp = Number(trade.cmp || 0);
+  const entryLegs = [
+    { price: Number(trade.entry || 0), qty: Number(trade.initialQty || 0), stop: 0 },
+    { price: Number(trade.p1Price || 0), qty: Number(trade.p1Qty || 0), stop: 0 },
+    { price: Number(trade.p2Price || 0), qty: Number(trade.p2Qty || 0), stop: 0 },
+  ];
+  const entryNotional = entryLegs.reduce(
+    (total, leg) => (leg.price > 0 && leg.qty > 0 ? total + leg.price * leg.qty : total),
+    0,
+  );
+  const entryLegQty = entryLegs.reduce(
+    (total, leg) => (leg.price > 0 && leg.qty > 0 ? total + leg.qty : total),
+    0,
+  );
+  const entryPrice = entryLegQty > 0 ? entryNotional / entryLegQty : Number(trade.avgEntry || trade.entry || 0);
 
-  const totalQty = Number(trade.initialQty || 0) + Number(trade.p1Qty || 0) + Number(trade.p2Qty || 0);
+  const totalQty = entryLegs.reduce((total, leg) => total + leg.qty, 0);
   const totalExitedQty = Number(trade.e1Qty || 0) + Number(trade.e2Qty || 0) + Number(trade.e3Qty || 0);
   
   const exitedQty = Math.min(totalQty, totalExitedQty);
@@ -338,13 +351,12 @@ export function calculateTrade(
   const invested = entryPrice * remainingQty;
   const effectiveStop = (baseStop: number) =>
     tslPrice > 0 ? Math.max(baseStop, tslPrice) : baseStop;
-  const entryLegs = [
-    { price: Number(trade.entry || 0), qty: Number(trade.initialQty || 0), stop: effectiveStop(slPrice) },
-    { price: Number(trade.p1Price || 0), qty: Number(trade.p1Qty || 0), stop: effectiveStop(Number(trade.p1Sl || 0) || slPrice) },
-    { price: Number(trade.p2Price || 0), qty: Number(trade.p2Qty || 0), stop: effectiveStop(Number(trade.p2Sl || 0) || slPrice) },
-  ];
+  entryLegs[0].stop = effectiveStop(slPrice);
+  entryLegs[1].stop = effectiveStop(Number(trade.p1Sl || 0) || slPrice);
+  entryLegs[2].stop = effectiveStop(Number(trade.p2Sl || 0) || slPrice);
   const fullPositionRisk = entryLegs.reduce(
-    (risk, leg) => risk + (leg.stop ? Math.abs(leg.price - leg.stop) * leg.qty : 0),
+    (risk, leg) =>
+      risk + (leg.price > 0 && leg.qty > 0 && leg.stop > 0 ? Math.max(0, leg.price - leg.stop) * leg.qty : 0),
     0,
   );
   const originalPositionRisk = entryLegs.reduce(
@@ -376,6 +388,7 @@ export function calculateTrade(
 
   return {
     ...trade,
+    avgEntry: entryPrice,
     positionStatus, // Now dynamic: "Closed" | "Partial" | "Open"
     exitedQty,
     openQty: remainingQty,
