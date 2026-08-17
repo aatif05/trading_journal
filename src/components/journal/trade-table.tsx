@@ -22,6 +22,7 @@ type Props = {
   visibleColumns: Set<ColumnKey>;
   onUpdate: (id: string, patch: Partial<Trade>) => void;
   onDelete: (id: string) => void;
+  onAdd: () => void;
   onRefreshCmp?: (trade: Trade) => void;
   refreshingIds?: Set<string>;
 };
@@ -247,6 +248,7 @@ export function TradeTable({
   visibleColumns,
   onUpdate,
   onDelete,
+  onAdd,
   onRefreshCmp,
   refreshingIds = new Set(),
 }: Props) {
@@ -263,6 +265,9 @@ export function TradeTable({
       <div className="flex min-h-72 flex-col items-center justify-center border-t border-[#edf0ee] bg-white px-6 text-center">
         <p className="text-sm font-semibold text-[#334039]">No trades found</p>
         <p className="mt-1 text-xs text-[#8a928d]">Add a trade or change your search filters.</p>
+        <button type="button" onClick={onAdd} className="mt-4 rounded-xl bg-[#17201b] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#2c3931] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8bc8aa]">
+          Add new trade
+        </button>
       </div>
     );
   }
@@ -898,8 +903,14 @@ onChange={(e3Qty) => onUpdate(trade.id, { e3Qty })}
               </tr>
             );
           })}
-        </tbody>
-      </table>
+      </tbody>
+    </table>
+    <div className="flex justify-center border-t border-[#edf0ee] bg-[#fbfcfb] px-4 py-3">
+      <button type="button" onClick={onAdd} className="inline-flex items-center gap-2 rounded-xl border border-[#dfe7e1] bg-white px-4 py-2 text-xs font-semibold text-[#334039] shadow-sm transition hover:border-[#a9cdb6] hover:bg-[#f6faf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8bc8aa]">
+        <span aria-hidden="true" className="text-base leading-none">+</span>
+        Add new trade
+      </button>
     </div>
+  </div>
   );
 }

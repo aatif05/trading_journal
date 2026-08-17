@@ -192,6 +192,7 @@ export default function Home() {
             visibleColumns={visibleColumns}
             onUpdate={handleUpdateTrade}
             onDelete={deleteTrade}
+            onAdd={handleAddTrade}
             onRefreshCmp={refreshTrade}
             refreshingIds={refreshingIds}
           />
