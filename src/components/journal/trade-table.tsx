@@ -220,6 +220,50 @@ function MetricPill({
   );
 }
 
+function PfImpactCell({ metric, capital }: { metric: ReturnType<typeof calculateTradeMetrics>[number]; capital: number }) {
+  const [open, setOpen] = useState(false);
+  const baseline = capital > 0 ? capital : 0;
+  const exits = [
+    { label: "E1", price: metric.e1Price, qty: metric.e1Qty, date: metric.e1Date },
+    { label: "E2", price: metric.e2Price, qty: metric.e2Qty, date: metric.e2Date },
+    { label: "E3", price: metric.e3Price, qty: metric.e3Qty, date: metric.e3Date },
+  ].filter((exit) => exit.price > 0 && exit.qty > 0);
+  const entryPrice = metric.avgEntry || metric.entry || 0;
+  const exitRows = exits.map((exit) => ({
+    ...exit,
+    pl: (exit.price - entryPrice) * exit.qty,
+    impact: baseline ? (((exit.price - entryPrice) * exit.qty) * 100) / baseline : 0,
+  }));
+
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen((value) => !value)} className="w-full text-left" aria-label={`PF impact details for ${metric.name || metric.tradeNo}`}>
+        <MetricPill className={`font-semibold ${toneForNumber(metric.portfolioImpact)}`}>
+          {baseline ? formatPercent(metric.portfolioImpact) : "—"}
+          <Info className="h-3 w-3 text-[#89918c]" />
+        </MetricPill>
+      </button>
+      {open && (
+        <div role="dialog" aria-label="PF impact breakdown" className="absolute right-0 top-[calc(100%+0.5rem)] z-[90] w-[min(360px,calc(100vw-2rem))] rounded-2xl border border-[#dfe7e1] bg-white p-4 text-left shadow-[0_16px_36px_rgba(22,35,28,0.16)]">
+          <div className="flex items-center justify-between border-b border-[#edf0ee] pb-3"><p className="font-bold text-[#161b18]">PF Impact Breakdown</p><p className={`font-bold ${toneForNumber(metric.portfolioImpact)}`}>{baseline ? formatPercent(metric.portfolioImpact) : "—"}</p></div>
+          <div className="flex flex-col gap-3 py-3">
+            {exitRows.length ? exitRows.map((exit) => (
+              <div key={exit.label} className="border-b border-[#edf0ee] pb-3 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between"><p className="font-semibold text-[#202421]">{exit.label}</p><p className="font-bold text-[#158b5a]">{baseline ? formatPercent(exit.impact) : "—"}</p></div>
+                <p className="mt-1 text-xs text-[#747d77]">Date: {exit.date || "—"}</p>
+                <p className="text-xs text-[#747d77]">Price: {formatCurrency(exit.price)}</p>
+                <p className="text-xs text-[#747d77]">P/L: <span className={toneForNumber(exit.pl)}>{formatCurrency(exit.pl)}</span></p>
+                <p className="text-xs text-[#747d77]">PF Baseline: {baseline ? `${formatCurrency(baseline)} (Capital)` : "Not available"}</p>
+              </div>
+            )) : <p className="text-sm text-[#747d77]">No exit legs recorded.</p>}
+          </div>
+          <div className="border-t border-[#edf0ee] pt-3 text-sm text-[#747d77]"><p className="font-semibold text-[#202421]">Overall PF Impact: <span className={toneForNumber(metric.portfolioImpact)}>{baseline ? formatPercent(metric.portfolioImpact) : "—"}</span></p><p className="mt-2">Calculation: {baseline ? `${formatCurrency(metric.grossPL)} ÷ ${formatCurrency(baseline)} × 100 = ${formatPercent(metric.portfolioImpact)}` : "Gross P/L ÷ PF baseline"}</p><p className="mt-2 text-xs font-medium text-[#202421]">* Capital-weighted | Cash method</p></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TableHead({
   children,
   className = "",
@@ -787,9 +831,7 @@ onChange={(e3Qty) => onUpdate(trade.id, { e3Qty })}
                 )}
                 {show("portfolioImpact") && (
                   <td className={`${cell} ${widths.portfolioImpact}`}>
-                    <MetricPill className={`font-semibold ${toneForNumber(metric.portfolioImpact)}`}>
-                      {formatPercent(metric.portfolioImpact)}
-                    </MetricPill>
+                    <PfImpactCell metric={metric} capital={capital} />
                   </td>
                 )}
                 {show("cummPF") && (
