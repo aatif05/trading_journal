@@ -15,6 +15,22 @@ export function useTrades() {
   const tradesRef = useRef<Trade[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  const persistTrades = useCallback((nextTrades: Trade[]) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, serializeTrades(nextTrades));
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {
+      // Storage may be unavailable or quota-limited; keep the in-memory journal usable.
+    }
+  }, []);
+
+  const replaceTrades = useCallback((nextTrades: Trade[]) => {
+    tradesRef.current = nextTrades;
+    setTrades(nextTrades);
+    persistTrades(nextTrades);
+  }, [persistTrades]);
+
   useEffect(() => {
     const stored =
       parseStoredTrades(window.localStorage.getItem(STORAGE_KEY)) ??
@@ -45,28 +61,28 @@ export function useTrades() {
   }, []);
 
   const updateTrade = useCallback((id: string, patch: Partial<Trade>) => {
-    setTrades((current) =>
-      current.map((trade) => (trade.id === id ? { ...trade, ...patch } : trade)),
+    const nextTrades = tradesRef.current.map((trade) =>
+      trade.id === id ? { ...trade, ...patch } : trade,
     );
-  }, []);
+    replaceTrades(nextTrades);
+  }, [replaceTrades]);
 
   const updateCmps = useCallback((updates: Array<{ id: string; cmp: number }>) => {
     if (!updates.length) return;
     const byId = new Map(updates.map((update) => [update.id, update.cmp]));
-    setTrades((current) =>
-      current.map((trade) =>
-        byId.has(trade.id) ? { ...trade, cmp: byId.get(trade.id)! } : trade,
-      ),
+    const nextTrades = tradesRef.current.map((trade) =>
+      byId.has(trade.id) ? { ...trade, cmp: byId.get(trade.id)! } : trade,
     );
-  }, []);
+    replaceTrades(nextTrades);
+  }, [replaceTrades]);
 
   const deleteTrade = useCallback((id: string) => {
-    setTrades((current) => current.filter((trade) => trade.id !== id));
-  }, []);
+    replaceTrades(tradesRef.current.filter((trade) => trade.id !== id));
+  }, [replaceTrades]);
 
   return {
     trades,
-    setTrades,
+    setTrades: replaceTrades,
     hydrated,
     addTrade,
     updateTrade,

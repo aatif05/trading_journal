@@ -142,7 +142,7 @@ export default function Home() {
           visibleColumns={visibleColumns}
           onToggleColumn={toggleColumn}
           trades={trades}
-          onImport={(imported) => setTrades((current) => [...current, ...imported])}
+          onImport={(imported) => setTrades([...trades, ...imported])}
           onAdd={handleAddTrade}
           onRefreshPrices={refreshOpenTrades}
           refreshingPrices={refreshingAll}
