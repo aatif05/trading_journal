@@ -112,6 +112,21 @@ describe("trade calculations", () => {
     expect(calculateTrade(trade).capitalAtRisk).toBeCloseTo(200 / 3);
   });
 
+  it("calculates PF impact from the portfolio baseline and accumulates it by row", () => {
+    const first = sampleTrade({ id: "first", entry: 100, initialQty: 10, e1Price: 110, e1Qty: 10 });
+    const second = sampleTrade({ id: "second", entry: 100, initialQty: 10, e1Price: 105, e1Qty: 10 });
+
+    const rows = calculatePortfolio([first, second], 1000);
+    expect(rows.grossImpact).toBe(15);
+    expect(calculateTrade(first, new Date(), 0, 1000).portfolioImpact).toBe(10);
+    expect(calculateTrade(second, new Date(), 10, 1000).cummPF).toBe(15);
+  });
+
+  it("returns zero PF impact when no capital baseline is available", () => {
+    const trade = sampleTrade({ entry: 100, initialQty: 10, e1Price: 110, e1Qty: 10 });
+    expect(calculateTrade(trade, new Date(), 0, 0).portfolioImpact).toBe(0);
+  });
+
   it("uses only closed positions to calculate win rate", () => {
     const winner = sampleTrade({
       id: "winner",
