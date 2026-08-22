@@ -109,7 +109,22 @@ describe("trade calculations", () => {
       e1Price: 125,
     });
 
-    expect(calculateTrade(trade).capitalAtRisk).toBeCloseTo(200 / 3);
+    expect(calculateTrade(trade).capitalAtRisk).toBeCloseTo(116.6666667);
+  });
+
+  it("uses weighted average entry for open risk when TSL is active", () => {
+    const trade = sampleTrade({
+      entry: 433.61,
+      initialQty: 100,
+      sl: 423,
+      tsl: 449,
+      p1Price: 492.2,
+      p1Qty: 20,
+      cmp: 449,
+    });
+
+    expect(calculateTrade(trade).avgEntry).toBeCloseTo(443.375, 3);
+    expect(calculateTrade(trade).capitalAtRisk).toBe(0);
   });
 
   it("calculates PF impact from the portfolio baseline and accumulates it by row", () => {

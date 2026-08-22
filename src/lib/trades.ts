@@ -354,17 +354,18 @@ export function calculateTrade(
   entryLegs[0].stop = effectiveStop(slPrice);
   entryLegs[1].stop = effectiveStop(Number(trade.p1Sl || 0) || slPrice);
   entryLegs[2].stop = effectiveStop(Number(trade.p2Sl || 0) || slPrice);
-  const fullPositionRisk = entryLegs.reduce(
-    (risk, leg) =>
-      risk + (leg.price > 0 && leg.qty > 0 && leg.stop > 0 ? Math.max(0, leg.price - leg.stop) * leg.qty : 0),
-    0,
-  );
   const originalPositionRisk = entryLegs.reduce(
     (risk, leg) =>
       risk + (leg.price > 0 && slPrice > 0 ? Math.abs(leg.price - slPrice) * leg.qty : 0),
     0,
   );
-  const initialRisk = totalQty > 0 ? (fullPositionRisk * remainingQty) / totalQty : 0;
+  // Open risk is measured on the remaining position at weighted average entry.
+  // A global TSL at or above average entry means no capital remains at risk.
+  const riskStop = tslPrice > 0 ? tslPrice : slPrice;
+  const initialRisk =
+    remainingQty > 0 && entryPrice > 0 && riskStop > 0
+      ? Math.max(0, entryPrice - riskStop) * remainingQty
+      : 0;
   const rewardRiskDenominator =
     totalQty > 0 ? (originalPositionRisk * remainingQty) / totalQty : 0;
 
