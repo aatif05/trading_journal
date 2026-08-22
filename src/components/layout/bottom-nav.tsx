@@ -15,7 +15,7 @@ import { usePathname } from "next/navigation";
 const items = [
   { label: "Journal", icon: BookOpen, href: "/" },
   { label: "Analytics", icon: BarChart3, href: "/analytics" },
-  { label: "Stock charts", icon: ChartCandlestick },
+  { label: "Stock charts", icon: ChartCandlestick, href: "/stock-charts" },
   { label: "Tax analytics", icon: FileText },
   { label: "Fund management", icon: Landmark, href: "/fund-management" },
   { label: "Deep analytics", icon: Sparkles },
