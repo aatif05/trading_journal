@@ -52,7 +52,8 @@ describe("price helpers", () => {
 
     expect(url).toContain("candleInterval=1m");
     expect(url).toContain("securities=EQ%3ASTALLION");
-    expect(url).toContain(encodeURIComponent(toIstIso(new Date("2026-08-06T06:23:16.000Z"))));
+    expect(url).toContain(encodeURIComponent(toIstIso(new Date("2026-08-07T06:23:16.000Z"))));
+    expect(buildStrikePriceUrl(["STALLION"], new Date("2026-08-06T06:23:16.000Z"), 15, "1d")).toContain("candleInterval=1d");
   });
 
   it("pipe-separates batched securities", () => {
