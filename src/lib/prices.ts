@@ -104,6 +104,14 @@ async function fetchChunk(
   return extractLatestPrices(payload, symbols);
 }
 
+export async function fetchStrikeTicks(symbol: string, lookbackMinutes = 60 * 24 * 5, fetchImpl: typeof fetch = fetch) {
+  const response = await fetchImpl(buildStrikePriceUrl([normalizeSymbol(symbol)], new Date(), lookbackMinutes), { headers: { Accept: "application/json" }, cache: "no-store" });
+  if (!response.ok) throw new Error(`Strike API responded ${response.status}`);
+  const payload = (await response.json()) as StrikePriceTicksResponse;
+  const key = Object.keys(payload.data?.ticks ?? {})[0];
+  return key ? (payload.data?.ticks?.[key] ?? []) : [];
+}
+
 export async function fetchStrikeLatestPrices(
   symbols: string[],
   fetchImpl: typeof fetch = fetch,
