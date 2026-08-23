@@ -1,61 +1,23 @@
 "use client";
 
-import { CandlestickSeries, ColorType, CrosshairMode, createChart, HistogramSeries, LineSeries, type IChartApi, type UTCTimestamp } from "lightweight-charts";
-import { useEffect, useRef, useState } from "react";
-import { BarChart3, ChevronDown, Maximize2, Pause, Play, Plus, RefreshCw, Settings2, Trash2 } from "lucide-react";
+import { CandlestickSeries, ColorType, CrosshairMode, createChart, HistogramSeries, LineSeries, createSeriesMarkers, type IChartApi, type UTCTimestamp } from "lightweight-charts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { RefreshCw, Settings2, Maximize2 } from "lucide-react";
+import { useTrades } from "@/hooks/use-trades";
 import { Trade } from "@/lib/trades";
+import { BottomNav } from "@/components/layout/bottom-nav";
 
-const base = Array.from({ length: 90 }, (_, i) => {
-  const close = 390 + i * 0.7 + Math.sin(i / 5) * 16 + (i > 55 ? (i - 55) * 2.2 : 0);
-  const open = close - Math.sin(i * 1.7) * 7;
-  return { time: Math.floor(new Date(2026, 0, i + 1).getTime() / 1000) as UTCTimestamp, open, high: Math.max(open, close) + 5 + (i % 4), low: Math.min(open, close) - 5, close, volume: 500 + ((i * 173) % 1400) };
-});
+type Candle = { time: UTCTimestamp; open: number; high: number; low: number; close: number; volume: number };
+function avg(data: Candle[], n: number, ema = false) { let last = data[0]?.close ?? 0; return data.flatMap((x, i) => { if (ema) last = x.close * (2 / (n + 1)) + last * (1 - 2 / (n + 1)); else if (i >= n - 1) last = data.slice(i - n + 1, i + 1).reduce((s, y) => s + y.close, 0) / n; return i >= n - 1 ? [{ time: x.time, value: last }] : []; }); }
+function markersFor(trades: Trade[], symbol: string) { return trades.filter((t) => t.name === symbol).flatMap((t) => { const items: { date?: string; price: number; text: string; position: "aboveBar" | "belowBar"; color: string; shape: "arrowUp" | "arrowDown" }[] = []; const add = (date: string | undefined, price: number, text: string, position: "aboveBar" | "belowBar", color: string, shape: "arrowUp" | "arrowDown") => date && price > 0 && items.push({ date, price, text, position, color, shape }); add(t.date, Number(t.entry), "Entry", "belowBar", "#15955f", "arrowUp"); add(t.date, Number(t.p1Price), "Scale-in", "belowBar", "#2864dd", "arrowUp"); add(t.date, Number(t.p2Price), "Scale-in", "belowBar", "#2864dd", "arrowUp"); add(t.e1Date, Number(t.e1Price), "E1", "aboveBar", "#e14f69", "arrowDown"); add(t.e2Date, Number(t.e2Price), "E2", "aboveBar", "#e14f69", "arrowDown"); add(t.e3Date, Number(t.e3Price), "E3", "aboveBar", "#e14f69", "arrowDown"); return items; }).map((m) => ({ time: Math.floor(new Date(m.date!).getTime() / 1000) as UTCTimestamp, position: m.position, color: m.color, shape: m.shape, text: m.text })); }
 
-function average(data: typeof base, period: number, exponential = false) {
-  let prev = data[0].close;
-  return data.map((item, i) => {
-    if (i < period - 1) return { time: item.time, value: NaN };
-    if (exponential) prev = item.close * (2 / (period + 1)) + prev * (1 - 2 / (period + 1));
-    else prev = data.slice(i - period + 1, i + 1).reduce((sum, x) => sum + x.close, 0) / period;
-    return { time: item.time, value: prev };
-  }).filter((x) => Number.isFinite(x.value));
-}
-
-export function StockChart({ trades = [] }: { trades?: Trade[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const chart = useRef<IChartApi | null>(null);
-  const symbol = "AEROFLEX";
-  const period = "1Y";
-  const [replay, setReplay] = useState(false);
-  const [markers, setMarkers] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!ref.current) return;
-    const api = createChart(ref.current, { autoSize: true, layout: { background: { type: ColorType.Solid, color: "#ffffff" }, textColor: "#69736c" }, grid: { vertLines: { color: "#f1f4f2" }, horzLines: { color: "#f1f4f2" } }, crosshair: { mode: CrosshairMode.Normal }, rightPriceScale: { borderColor: "#e5eae6" }, timeScale: { borderColor: "#e5eae6", timeVisible: false } });
-    const candles = api.addSeries(CandlestickSeries, { upColor: "#16a05d", downColor: "#ef4f5f", borderUpColor: "#16a05d", borderDownColor: "#ef4f5f", wickUpColor: "#16a05d", wickDownColor: "#ef4f5f" });
-    candles.setData(base);
-    const volume = api.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "" });
-    volume.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
-    volume.setData(base.map((x) => ({ time: x.time, value: x.volume, color: x.close >= x.open ? "#9bdab7" : "#f4a0a8" })));
-    const sma = api.addSeries(LineSeries, { color: "#2864dd", lineWidth: 2, title: "SMA 10" });
-    sma.setData(average(base, 10));
-    const ema = api.addSeries(LineSeries, { color: "#ef5b62", lineWidth: 2, title: "EMA 20" });
-    ema.setData(average(base, 20, true));
-    api.timeScale().fitContent();
-    chart.current = api;
-    return () => { api.remove(); chart.current = null; };
-  }, []);
-
-  const trade = trades.find((x) => x.name === symbol);
-  return <main className="min-h-screen bg-white pb-20 text-[#202923]">
-    <header className="flex flex-wrap items-center justify-center gap-3 border-b border-[#edf0ee] px-4 py-4">
-      <button className="flex items-center gap-2 rounded-xl border border-[#e6ebe7] px-5 py-2.5 font-bold shadow-sm"><span className="size-3 rounded-full bg-[#ef3138]" />{symbol}<ChevronDown className="size-4" /></button>
-      <button className="rounded-xl border border-[#e6ebe7] px-5 py-2.5 font-semibold">{period}<ChevronDown className="ml-4 inline size-4" /></button>
-      <button onClick={() => setReplay(!replay)} className="flex items-center gap-2 rounded-xl border border-[#e6ebe7] px-5 py-2.5 font-semibold">{replay ? <Pause className="size-4" /> : <Play className="size-4" />} Replay</button>
-      <button className="flex items-center gap-2 rounded-xl border border-[#e6ebe7] px-5 py-2.5 font-semibold"><BarChart3 className="size-4" /> Bars</button>
-      <button className="rounded-xl border border-[#e6ebe7] p-2.5" aria-label="Chart settings"><Settings2 className="size-4" /></button>
-    </header>
-    <section className="mx-auto max-w-[1500px] px-4 pt-4"><div className="flex flex-wrap items-center gap-3 rounded-2xl bg-[#fbfcfb] px-5 py-3 text-sm"><span className="font-bold uppercase tracking-wider text-[#9ba39d]">Moving avg:</span><span className="font-semibold text-[#2864dd]">● SMA 10</span><span className="font-semibold text-[#ef5b62]">● EMA 20</span><button className="ml-auto text-[#7a847d]" aria-label="Refresh chart"><RefreshCw className="size-4" /></button></div><div className="mt-3 flex items-center gap-4 px-2 text-sm"><span className="font-semibold text-[#2864dd]">━ SMA 10</span><span className="font-semibold text-[#ef5b62]">━ EMA 20</span>{trade && <span className="ml-auto rounded-lg bg-[#e9f8ef] px-3 py-1 text-[#148b50]">Entry ₹{trade.entry}</span>}</div><div ref={ref} className="h-[min(68vh,680px)] min-h-[420px] w-full" /></section>
-    <div className="fixed bottom-20 right-5 flex flex-col gap-2"><button onClick={() => setMarkers([...markers, "marker"])} className="rounded-full bg-[#17201b] p-3 text-white shadow-lg" aria-label="Add entry or exit marker"><Plus className="size-5" /></button>{markers.length > 0 && <button onClick={() => setMarkers([])} className="rounded-full border border-[#e4e9e5] bg-white p-3 shadow-lg" aria-label="Clear markers"><Trash2 className="size-5" /></button>}<button className="rounded-full border border-[#e4e9e5] bg-white p-3 shadow-lg" aria-label="Fullscreen"><Maximize2 className="size-5" /></button></div>
-  </main>;
+export function StockChart() {
+  const { trades } = useTrades(); const ref = useRef<HTMLDivElement>(null); const chart = useRef<IChartApi | null>(null); const [symbol, setSymbol] = useState(""); const [candles, setCandles] = useState<Candle[]>([]); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
+  const symbols = useMemo(() => [...new Set(trades.map((t) => t.name).filter(Boolean))], [trades]); const selectedSymbol = symbol || symbols[0] || "";
+  const load = async () => { if (!selectedSymbol) return; setLoading(true); setError(""); try { const r = await fetch(`/api/prices/candles?symbol=${encodeURIComponent(selectedSymbol)}`, { cache: "no-store" }); const json = await r.json(); if (!r.ok) throw new Error(json.error); setCandles((json.ticks ?? []).map((x: string[]) => ({ time: Math.floor(new Date(x[0]).getTime() / 1000) as UTCTimestamp, open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5] })).filter((x: Candle) => Number.isFinite(x.time) && x.high > 0)); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load candles"); setCandles([]); } finally { setLoading(false); } };
+  // Fetching market data is an external synchronization effect.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [selectedSymbol]);
+  useEffect(() => { if (!ref.current || !candles.length) return; const api = createChart(ref.current, { autoSize: true, layout: { background: { type: ColorType.Solid, color: "#fff" }, textColor: "#69736c" }, grid: { vertLines: { color: "#f1f4f2" }, horzLines: { color: "#f1f4f2" } }, crosshair: { mode: CrosshairMode.Normal }, rightPriceScale: { borderColor: "#e5eae6" } }); const cs = api.addSeries(CandlestickSeries, { upColor: "#16a05d", downColor: "#ef4f5f", borderUpColor: "#16a05d", borderDownColor: "#ef4f5f", wickUpColor: "#16a05d", wickDownColor: "#ef4f5f" }); cs.setData(candles); const vol = api.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "" }); vol.priceScale().applyOptions({ scaleMargins: { top: .82, bottom: 0 } }); vol.setData(candles.map((x) => ({ time: x.time, value: x.volume, color: x.close >= x.open ? "#9bdab7" : "#f4a0a8" }))); const sma = api.addSeries(LineSeries, { color: "#2864dd", lineWidth: 2, title: "SMA 10" }); sma.setData(avg(candles, 10)); const ema = api.addSeries(LineSeries, { color: "#ef5b62", lineWidth: 2, title: "EMA 20" }); ema.setData(avg(candles, 20, true)); createSeriesMarkers(cs, markersFor(trades, selectedSymbol)); api.timeScale().fitContent(); chart.current = api; return () => api.remove(); }, [candles, symbol, trades]);
+  return <main className="min-h-screen bg-white pb-24 text-[#202923]"><header className="flex flex-wrap items-center justify-center gap-3 border-b border-[#edf0ee] px-4 py-4"><select value={selectedSymbol} onChange={(e) => setSymbol(e.target.value)} className="rounded-xl border border-[#e6ebe7] px-5 py-2.5 font-bold" aria-label="Select stock symbol">{symbols.map((s) => <option key={s}>{s}</option>)}</select><span className="rounded-xl border border-[#e6ebe7] px-5 py-2.5 font-semibold">1m · 5D</span><button onClick={load} disabled={loading} className="flex items-center gap-2 rounded-xl border border-[#e6ebe7] px-4 py-2.5 font-semibold"><RefreshCw className="size-4" />{loading ? "Loading" : "Refresh"}</button><button className="rounded-xl border border-[#e6ebe7] p-2.5" aria-label="Chart settings"><Settings2 className="size-4" /></button><button className="rounded-xl border border-[#e6ebe7] p-2.5" aria-label="Fullscreen"><Maximize2 className="size-4" /></button></header><section className="mx-auto max-w-[1500px] px-4 pt-4"><div className="flex flex-wrap items-center gap-4 rounded-2xl bg-[#fbfcfb] px-5 py-3 text-sm"><span className="font-bold uppercase tracking-wider text-[#9ba39d]">Indicators:</span><span className="font-semibold text-[#2864dd]">━ SMA 10</span><span className="font-semibold text-[#ef5b62]">━ EMA 20</span><span className="font-semibold text-[#15955f]">▲ Entry / Scale-in</span><span className="font-semibold text-[#e14f69]">▼ Exit</span></div>{error && <p className="mt-4 rounded-xl bg-[#fff4f4] p-3 text-sm text-[#c73f50]">{error}</p>}{!loading && !candles.length && !error && <p className="mt-4 rounded-xl bg-[#f6f8f6] p-3 text-sm text-[#69736c]">No live candles returned for this symbol.</p>}<div ref={ref} className="mt-3 h-[min(68vh,680px)] min-h-[420px] w-full" /></section><BottomNav /></main>;
 }
