@@ -1,25 +1,25 @@
 "use client";
 
-import { CandlestickSeries, ColorType, CrosshairMode, createChart, HistogramSeries, LineSeries, createSeriesMarkers, type IChartApi, type UTCTimestamp } from "lightweight-charts";
+import { CandlestickSeries, ColorType, CrosshairMode, createChart, HistogramSeries, LineSeries, createSeriesMarkers, type IChartApi, type Time, type UTCTimestamp } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, Settings2, Maximize2 } from "lucide-react";
 import { useTrades } from "@/hooks/use-trades";
 import { calculateTradeMetrics, formatCurrency, type Trade } from "@/lib/trades";
 import { BottomNav } from "@/components/layout/bottom-nav";
 
-type Candle = { time: UTCTimestamp; open: number; high: number; low: number; close: number; volume: number };
+type Candle = { time: Time; open: number; high: number; low: number; close: number; volume: number };
 const ranges = ["1M", "3M", "6M", "1Y"] as const;
 const intervals = [{ label: "1D", value: "1d" }, { label: "1H", value: "1h" }, { label: "15m", value: "15m" }, { label: "5m", value: "5m" }, { label: "1m", value: "1m" }];
 function avg(data: Candle[], n: number, ema = false) { let last = data[0]?.close ?? 0; return data.flatMap((x, i) => { if (ema) last = x.close * (2 / (n + 1)) + last * (1 - 2 / (n + 1)); else if (i >= n - 1) last = data.slice(i - n + 1, i + 1).reduce((s, y) => s + y.close, 0) / n; return i >= n - 1 ? [{ time: x.time, value: last }] : []; }); }
-function chartTime(value: string, daily: boolean) { return daily ? value.slice(0, 10) : Math.floor(new Date(value).getTime() / 1000) as UTCTimestamp; }
+function chartTime(value: string, daily: boolean): Time { return daily ? value.slice(0, 10) : Math.floor(new Date(value).getTime() / 1000) as UTCTimestamp; }
 function markersFor(trades: Trade[], symbol: string, daily: boolean) { return trades.filter(t => t.name === symbol).flatMap(t => [[t.date, Number(t.entry), "Entry", "belowBar", "#15955f", "arrowUp"], [t.date, Number(t.p1Price), "Scale-in", "belowBar", "#2864dd", "arrowUp"], [t.date, Number(t.p2Price), "Scale-in", "belowBar", "#2864dd", "arrowUp"], [t.e1Date, Number(t.e1Price), "E1", "aboveBar", "#e14f69", "arrowDown"], [t.e2Date, Number(t.e2Price), "E2", "aboveBar", "#e14f69", "arrowDown"], [t.e3Date, Number(t.e3Price), "E3", "aboveBar", "#e14f69", "arrowDown"]] as const).filter(x => x[0] && x[1] > 0).map(x => ({ time: chartTime(x[0]!, daily) as UTCTimestamp, position: x[3] as "aboveBar" | "belowBar", color: x[4], shape: x[5] as "arrowUp" | "arrowDown", text: x[2] })); }
 
 export function StockChart() {
   const { trades } = useTrades(); const ref = useRef<HTMLDivElement>(null); const chart = useRef<IChartApi | null>(null); const [symbol, setSymbol] = useState(""); const [range, setRange] = useState("6M");   const [interval, setInterval] = useState("1d");
   const [ma1, setMa1] = useState<"EMA" | "SMA">("EMA");
   const [ma2, setMa2] = useState<"EMA" | "SMA">("EMA"); const [candles, setCandles] = useState<Candle[]>([]); const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [losers, setLosers] = useState(false);
-  const symbols = useMemo(() => [...new Set(trades.map(t => t.name).filter(Boolean))], [trades]); const selected = symbol || symbols[0] || ""; const metrics = useMemo(() => calculateTradeMetrics(trades, new Date(), 0).filter(t => t.positionStatus === "Closed").sort((a, b) => Math.abs(b.grossPL) - Math.abs(a.grossPL)), [trades]);
-  const load = async () => { if (!selected) return; setLoading(true); try { const r = await fetch(`/api/prices/candles?symbol=${encodeURIComponent(selected)}&range=${range}&interval=${interval}`, { cache: "no-store" }); const json = await r.json(); if (!r.ok) throw new Error(json.error); setCandles((json.ticks ?? []).map((x: string[]) => ({ time: chartTime(x[0], interval === "1d") as UTCTimestamp, open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5] })).filter((x: Candle) => Number.isFinite(x.time) && x.high > 0)); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load candles"); setCandles([]); } finally { setLoading(false); } };
+  const symbols = useMemo(() => [...new Set(trades.map(t => t.name).filter(Boolean))], [trades]); const selected = symbol || symbols[0] || "NETWEB"; const metrics = useMemo(() => calculateTradeMetrics(trades, new Date(), 0).filter(t => t.positionStatus === "Closed").sort((a, b) => Math.abs(b.grossPL) - Math.abs(a.grossPL)), [trades]);
+  const load = async () => { if (!selected) return; setLoading(true); try { const r = await fetch(`/api/prices/candles?symbol=${encodeURIComponent(selected)}&range=${range}&interval=${interval}`, { cache: "no-store" }); const json = await r.json(); if (!r.ok) throw new Error(json.error); setCandles((json.ticks ?? []).map((x: string[]) => ({ time: chartTime(x[0], interval === "1d") as UTCTimestamp, open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5] })).filter((x: Candle) => typeof x.time === "string" ? /^\d{4}-\d{2}-\d{2}$/.test(x.time) : Number.isFinite(x.time) && x.high > 0)); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load candles"); setCandles([]); } finally { setLoading(false); } };
   // Fetch market data when the selected chart controls change.
   // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { void load(); }, [selected, range, interval]);
