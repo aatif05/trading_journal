@@ -72,7 +72,9 @@ export function extractLatestPrices(
 }
 
 export function buildStrikePriceUrl(symbols: string[], now = new Date(), lookbackMinutes = 15, candleInterval = "1m") {
-  const to = toIstIso(now);
+  const end = new Date(now);
+  end.setDate(end.getDate() + 1);
+  const to = toIstIso(end);
   const from = toIstIso(new Date(now.getTime() - lookbackMinutes * 60_000));
   // Strike only returns ticks when multiple securities are pipe-separated.
   const securities = symbols.map((symbol) => `EQ:${symbol}`).join("|");
