@@ -175,7 +175,7 @@ export default function Home() {
         )}
 
         <KpiGrid metrics={metrics} rows={tradeMetrics} />
-        <ProJournalInsights trades={trades} rows={tradeMetrics} onUpdate={handleUpdateTrade} />
+        <ProJournalInsights trades={trades} rows={tradeMetrics} />
 
         <section className="overflow-hidden rounded-2xl border border-[#e5e9e6] bg-white shadow-[0_2px_8px_rgba(24,40,30,0.035)]">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e9ecea] bg-[#fbfcfb] px-4 py-2.5 text-[10px] text-[#777f7a]">
