@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Info, RefreshCw, Trash2 } from "lucide-react";
+import { CalendarDays, Info, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import {
   calculateTradeMetrics,
@@ -21,7 +21,6 @@ type Props = {
   capital: number;
   visibleColumns: Set<ColumnKey>;
   onUpdate: (id: string, patch: Partial<Trade>) => void;
-  onDelete: (id: string) => void;
   onAdd: () => void;
   onRefreshCmp?: (trade: Trade) => void;
   refreshingIds?: Set<string>;
@@ -291,19 +290,12 @@ export function TradeTable({
   capital,
   visibleColumns,
   onUpdate,
-  onDelete,
   onAdd,
   onRefreshCmp,
   refreshingIds = new Set(),
 }: Props) {
   const show = (key: ColumnKey) => visibleColumns.has(key);
   const metrics = calculateTradeMetrics(trades, new Date(), capital);
-  const remove = (trade: Trade) => {
-    if (window.confirm(`Delete trade #${trade.tradeNo} (${trade.name})?`)) {
-      onDelete(trade.id);
-    }
-  };
-
   if (!trades.length) {
     return (
       <div className="flex min-h-72 flex-col items-center justify-center border-t border-[#edf0ee] bg-white px-6 text-center">
@@ -321,7 +313,6 @@ export function TradeTable({
       <table className="min-w-max table-fixed border-collapse bg-white">
         <thead className="sticky top-0 z-30">
           <tr>
-            <th className="sticky left-0 z-40 h-11 w-12 border-b border-r border-[#e8ebe9] bg-[#fbfcfb] px-2" />
             {show("tradeNo") && <TableHead>Trade no.</TableHead>}
             {show("date") && <TableHead>Date</TableHead>}
             {show("name") && (
@@ -377,7 +368,6 @@ export function TradeTable({
             {show("quickNote") && <TableHead>Notes</TableHead>}
             {show("unrealized") && <TableHead>Unrealized P/L</TableHead>}
             {show("brokerage") && <TableHead>Brokerage (₹)</TableHead>}
-            {show("actions") && <TableHead>Actions</TableHead>}
           </tr>
         </thead>
         <tbody>
@@ -386,16 +376,6 @@ export function TradeTable({
             const cell = "border-b border-[#edf0ee] px-2.5 py-2 text-xs";
             return (
               <tr key={trade.id} className="group hover:bg-[#fbfcfb]">
-                <td className="sticky left-0 z-20 w-12 border-b border-r border-[#edf0ee] bg-white px-2 text-center group-hover:bg-[#fbfcfb]">
-                  <button
-                    onClick={() => remove(trade)}
-                    aria-label={`Delete trade ${trade.tradeNo}`}
-                    title="Delete trade"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[#bcc2be] opacity-30 transition hover:bg-[#fff0f2] hover:text-[#df5066] group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </td>
                 {show("tradeNo") && (
                   <td className={`${cell} ${widths.tradeNo} text-center font-bold`}>
                     {trade.tradeNo}
@@ -928,18 +908,6 @@ onChange={(e3Qty) => onUpdate(trade.id, { e3Qty })}
                       onChange={(brokerage) => onUpdate(trade.id, { brokerage })}
                       label="Brokerage"
                     />
-                  </td>
-                )}
-                {show("actions") && (
-                  <td className={`${cell} ${widths.actions} text-center`}>
-                    <button
-                      onClick={() => remove(trade)}
-                      aria-label={`Delete trade ${trade.tradeNo}`}
-                      className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#ead7db] bg-[#fff7f8] px-2.5 text-[11px] font-semibold text-[#d24a61] transition hover:bg-[#ffe8ec]"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                    </button>
                   </td>
                 )}
               </tr>
