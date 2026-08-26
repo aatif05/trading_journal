@@ -29,7 +29,6 @@ export default function Home() {
     addTrade,
     updateTrade,
     updateCmps,
-    deleteTrade,
   } = useTrades();
   const { flows, hydrated: flowsHydrated } = useCapitalFlows();
   const hydrated = tradesHydrated && flowsHydrated;
@@ -143,7 +142,7 @@ export default function Home() {
           visibleColumns={visibleColumns}
           onToggleColumn={toggleColumn}
           trades={trades}
-          onImport={(imported) => setTrades([...trades, ...imported])}
+          onImport={(imported) => setTrades(imported)}
           onAdd={handleAddTrade}
           onRefreshPrices={refreshOpenTrades}
           refreshingPrices={refreshingAll}
@@ -193,7 +192,6 @@ export default function Home() {
             capital={capital}
             visibleColumns={visibleColumns}
             onUpdate={handleUpdateTrade}
-            onDelete={deleteTrade}
             onAdd={handleAddTrade}
             onRefreshCmp={refreshTrade}
             refreshingIds={refreshingIds}
