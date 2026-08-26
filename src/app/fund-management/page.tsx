@@ -156,7 +156,7 @@ export default function FundManagementPage() {
             ) : (
               <CloudOff className="h-3 w-3" />
             )}
-            {hydrated ? "Private · saved locally" : "Loading journal…"}
+            {hydrated ? "Private · synced to Neon" : "Loading journal…"}
           </div>
         </div>
       </header>

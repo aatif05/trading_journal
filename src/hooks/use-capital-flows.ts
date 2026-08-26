@@ -1,40 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import {
-  type CapitalFlow,
-  type CapitalFlows,
-  FUND_FLOWS_STORAGE_KEY,
-  parseCapitalFlows,
-  serializeCapitalFlows,
-  updateCapitalFlow,
-} from "@/lib/fund-management";
+import { useCallback, useMemo } from "react";
+import useSWR from "swr";
+import { type CapitalFlow, type CapitalFlows, updateCapitalFlow } from "@/lib/fund-management";
+
+const fetcher = (url: string) => fetch(url).then((response) => { if (!response.ok) throw new Error("Unable to load journal"); return response.json(); });
 
 export function useCapitalFlows() {
-  const [flows, setFlows] = useState<CapitalFlows>({});
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    const stored = parseCapitalFlows(window.localStorage.getItem(FUND_FLOWS_STORAGE_KEY));
-    const hydrate = window.setTimeout(() => {
-      setFlows(stored);
-      setHydrated(true);
-    }, 0);
-    return () => window.clearTimeout(hydrate);
-  }, []);
-
-  useEffect(() => {
-    if (hydrated) {
-      window.localStorage.setItem(FUND_FLOWS_STORAGE_KEY, serializeCapitalFlows(flows));
-    }
-  }, [flows, hydrated]);
-
-  const updateFlow = useCallback(
-    (year: number, month: number, field: keyof CapitalFlow, value: number) => {
-      setFlows((current) => updateCapitalFlow(current, year, month, field, value));
-    },
-    [],
-  );
-
-  return { flows, hydrated, updateFlow };
+  const { data, error, mutate } = useSWR<{ flows: CapitalFlows }>("/api/journal", fetcher, { revalidateOnFocus: false });
+  const flows = useMemo(() => data?.flows ?? {}, [data?.flows]);
+  const updateFlow = useCallback((year: number, month: number, field: keyof CapitalFlow, value: number) => {
+    const next = updateCapitalFlow(flows, year, month, field, value);
+    void mutate({ flows: next }, false);
+    void fetch("/api/journal", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ flows: next }) });
+  }, [flows, mutate]);
+  return { flows, hydrated: Boolean(data) || Boolean(error), updateFlow };
 }
