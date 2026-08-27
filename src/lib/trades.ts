@@ -45,6 +45,16 @@ export type Trade = {
   brokerage: number;
 };
 
+export type ExitMetric = {
+  label: string;
+  price: number;
+  qty: number;
+  realizedPL: number;
+  rMultiple: number;
+  portfolioImpact: number;
+  cummPF: number;
+};
+
 export type TradeMetric = Trade & {
   exitedQty: number;
   openQty: number;
@@ -64,6 +74,7 @@ export type TradeMetric = Trade & {
   slPercent: number;
   computedAvgExit: number;
   cummPF: number;
+  exits: ExitMetric[];
 };
 
 export type PortfolioMetrics = {
@@ -385,6 +396,21 @@ export function calculateTrade(
 
   const grossPL = realized + unrealized - Number(trade.brokerage || 0);
   const portfolioImpact = shareOfCapital(grossPL, capital);
+  const exitLegs = [
+    ["E1", Number(trade.e1Price || 0), Number(trade.e1Qty || 0)],
+    ["E2", Number(trade.e2Price || 0), Number(trade.e2Qty || 0)],
+    ["E3", Number(trade.e3Price || 0), Number(trade.e3Qty || 0)],
+  ] as const;
+  let exitRunningPF = cummPF;
+  const exits = exitLegs.filter(([, price, qty]) => price > 0 && qty > 0).map(([label, price, qty]) => {
+    const direction = trade.side === "Sell" ? -1 : 1;
+    const realizedPL = (price - entryPrice) * qty * direction;
+    const riskPerUnit = slPrice > 0 ? Math.abs(entryPrice - slPrice) : 0;
+    const rMultiple = riskPerUnit > 0 ? realizedPL / (riskPerUnit * qty) : 0;
+    const legImpact = shareOfCapital(realizedPL - Number(trade.brokerage || 0) * (qty / Math.max(1, exitedQty)), capital);
+    exitRunningPF += legImpact;
+    return { label, price, qty, realizedPL, rMultiple, portfolioImpact: legImpact, cummPF: exitRunningPF };
+  });
   const positionSize = entryPrice * totalQty;
 
   return {
@@ -409,6 +435,7 @@ export function calculateTrade(
     slPercent: entryPrice && slPrice ? (Math.abs(entryPrice - slPrice) * 100) / entryPrice : 0,
     computedAvgExit,
     cummPF: cummPF + portfolioImpact,
+    exits,
   };
 }
 
