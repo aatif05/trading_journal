@@ -54,7 +54,7 @@ export default function Home() {
 
   const filteredTrades = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return trades.filter((trade) => {
+    return [...trades].sort((a, b) => Number(a.tradeNo) - Number(b.tradeNo)).filter((trade) => {
       const positionStatus = calculateTrade(trade).positionStatus;
       const matchesStatus =
         status === "All" ||
@@ -91,11 +91,10 @@ export default function Home() {
 
   const handleUpdateTrade = (id: string, patch: Partial<Trade>) => {
     updateTrade(id, patch);
-    if (patch.name?.trim() && patch.name.trim().toUpperCase() !== "NEW TRADE") {
-      const existingTrade = trades.find((trade) => trade.id === id);
-      if (existingTrade) {
-        void refreshTrade({ ...existingTrade, ...patch });
-      }
+    const existingTrade = trades.find((trade) => trade.id === id);
+    const candidate = existingTrade ? { ...existingTrade, ...patch } : null;
+    if (candidate?.name.trim() && candidate.entry > 0 && candidate.initialQty > 0 && patch.cmp !== undefined) {
+      void refreshTrade(candidate);
     }
   };
 
