@@ -127,6 +127,21 @@ describe("trade calculations", () => {
     expect(calculateTrade(trade).capitalAtRisk).toBe(0);
   });
 
+  it("calculates independent realized metrics for each exit leg", () => {
+    const trade = sampleTrade({ entry: 100, initialQty: 10, sl: 90, e1Price: 120, e1Qty: 4, e2Price: 80, e2Qty: 6 });
+    const metric = calculateTrade(trade, new Date(), 0, 1000);
+    expect(metric.exits[0].realizedPL).toBe(80);
+    expect(metric.exits[0].rMultiple).toBe(2);
+    expect(metric.exits[1].realizedPL).toBe(-120);
+    expect(metric.exits[1].rMultiple).toBe(-2);
+    expect(metric.realized).toBe(-40);
+  });
+
+  it("reverses exit P/L for sell trades", () => {
+    const trade = sampleTrade({ side: "Sell", entry: 100, initialQty: 5, sl: 110, e1Price: 90, e1Qty: 5 });
+    expect(calculateTrade(trade, new Date(), 0, 1000).exits[0].realizedPL).toBe(50);
+  });
+
   it("calculates PF impact from the portfolio baseline and accumulates it by row", () => {
     const first = sampleTrade({ id: "first", entry: 100, initialQty: 10, e1Price: 110, e1Qty: 10 });
     const second = sampleTrade({ id: "second", entry: 100, initialQty: 10, e1Price: 105, e1Qty: 10 });
