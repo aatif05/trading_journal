@@ -211,7 +211,7 @@ export function createTrade(trades: Trade[]): Trade {
     id: crypto.randomUUID(),
     tradeNo: nextNo,
     date: new Date().toISOString().slice(0, 10),
-    name: "NEW TRADE",
+    name: "",
   };
 }
 
