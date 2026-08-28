@@ -1,3 +1,4 @@
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
 
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
     const symbol = body.symbol?.trim().toUpperCase();
     if (!symbol) return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
     const result = await generateText({
-      model: "openai/gpt-4o-mini",
+      model: google("gemini-2.5-flash"),
       instructions: "You are a cautious market research assistant. Never give financial advice or certainty. Use only supplied inputs, state missing data, cite the inputs used, and return concise JSON-like markdown sections: thesis, signals, risks, invalidation, confidence, inputs used.",
       prompt: `Research ${symbol}. Mode: ${body.mode ?? "analysis"}. Supplied market inputs: ${JSON.stringify(body.inputs ?? {})}`,
     });
