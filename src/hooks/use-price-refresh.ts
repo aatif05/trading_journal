@@ -2,7 +2,14 @@
 
 import { useCallback,useEffect, useState } from "react";
 import { fetchLatestPrices, normalizeSymbol } from "@/lib/prices";
-import { Trade } from "@/lib/trades";
+import { calculateTrade, Trade } from "@/lib/trades";
+
+function isAfterIndianMarketClose(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(now);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+  return hour > 16 || (hour === 16 && minute >= 0);
+}
 
 export function usePriceRefresh(
   trades: Trade[],
@@ -27,6 +34,10 @@ export function usePriceRefresh(
 
   const refreshTrade = useCallback(
     async (trade: Trade) => {
+      if (isAfterIndianMarketClose()) {
+        setLastError("CMP refresh is paused after 4:00 PM IST.");
+        return;
+      }
       const symbol = normalizeSymbol(trade.name);
       if (!symbol) {
         setLastError("Add a stock name before refreshing CMP.");
@@ -57,8 +68,12 @@ export function usePriceRefresh(
   );
 
   const refreshOpenTrades = useCallback(async () => {
+    if (isAfterIndianMarketClose()) {
+      setLastError("CMP refresh is paused after 4:00 PM IST.");
+      return;
+    }
     const openTrades = trades.filter(
-      (trade) => trade.positionStatus === "Open" && normalizeSymbol(trade.name),
+      (trade) => calculateTrade(trade).positionStatus !== "Closed" && normalizeSymbol(trade.name),
     );
     if (!openTrades.length) {
       setLastError("No open trades with stock names to refresh.");
