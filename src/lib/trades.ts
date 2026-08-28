@@ -432,7 +432,7 @@ export function calculateTrade(
     portfolioImpact,
     positionSize,
     currentAllocation: shareOfCapital(invested, capital),
-    slPercent: entryPrice && slPrice ? (Math.abs(entryPrice - slPrice) * 100) / entryPrice : 0,
+    slPercent: Number(trade.entry || 0) > 0 && slPrice > 0 ? (Math.abs(Number(trade.entry) - slPrice) * 100) / Number(trade.entry) : 0,
     computedAvgExit,
     cummPF: cummPF + portfolioImpact,
     exits,
