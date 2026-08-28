@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   FileText,
   Landmark,
+  Search,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +17,7 @@ const items = [
   { label: "Journal", icon: BookOpen, href: "/" },
   { label: "Analytics", icon: BarChart3, href: "/analytics" },
   { label: "Stock charts", icon: ChartCandlestick, href: "/stock-charts" },
+  { label: "Research", icon: Search, href: "/research" },
   { label: "Tax analytics", icon: FileText },
   { label: "Fund management", icon: Landmark, href: "/fund-management" },
   { label: "Deep analytics", icon: Sparkles },

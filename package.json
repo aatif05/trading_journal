@@ -11,6 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.56",
+    "ai": "^7.0.83",
     "drizzle-orm": "^0.45.2",
     "lightweight-charts": "^5.2.1",
     "lucide-react": "^1.28.0",

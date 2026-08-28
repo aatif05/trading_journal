@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { JournalToolbar } from "@/components/journal/journal-toolbar";
 import { KpiGrid } from "@/components/journal/kpi-grid";
 import { ProJournalInsights } from "@/components/journal/pro-journal-insights";
+import { RiskWarning } from "@/components/journal/risk-warning";
 import { TradeTable } from "@/components/journal/trade-table";
 import { useCapitalFlows } from "@/hooks/use-capital-flows";
 import { usePriceRefresh } from "@/hooks/use-price-refresh";
@@ -93,7 +94,8 @@ export default function Home() {
     updateTrade(id, patch);
     const existingTrade = trades.find((trade) => trade.id === id);
     const candidate = existingTrade ? { ...existingTrade, ...patch } : null;
-    if (candidate?.name.trim() && candidate.entry > 0 && candidate.initialQty > 0 && patch.cmp !== undefined) {
+    const setupFieldChanged = patch.name !== undefined || patch.entry !== undefined || patch.initialQty !== undefined;
+    if (candidate?.name.trim() && candidate.entry > 0 && candidate.initialQty > 0 && setupFieldChanged) {
       void refreshTrade(candidate);
     }
   };
@@ -133,7 +135,8 @@ export default function Home() {
       </header>
 
       <div className="mx-auto flex max-w-[1500px] flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-        <JournalToolbar
+        <RiskWarning metrics={tradeMetrics} />
+  <JournalToolbar
           query={query}
           onQueryChange={setQuery}
           status={status}
