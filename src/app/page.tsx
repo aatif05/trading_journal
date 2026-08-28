@@ -93,7 +93,8 @@ export default function Home() {
     updateTrade(id, patch);
     const existingTrade = trades.find((trade) => trade.id === id);
     const candidate = existingTrade ? { ...existingTrade, ...patch } : null;
-    if (candidate?.name.trim() && candidate.entry > 0 && candidate.initialQty > 0 && patch.cmp !== undefined) {
+    const setupFieldChanged = patch.name !== undefined || patch.entry !== undefined || patch.initialQty !== undefined;
+    if (candidate?.name.trim() && candidate.entry > 0 && candidate.initialQty > 0 && setupFieldChanged) {
       void refreshTrade(candidate);
     }
   };
