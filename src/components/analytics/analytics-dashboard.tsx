@@ -12,6 +12,8 @@ import {
   YAxis,
 } from "recharts";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { ProJournalInsights } from "@/components/journal/pro-journal-insights";
+import { calculateTradeMetrics } from "@/lib/trades";
 import { useTrades } from "@/hooks/use-trades";
 import { useCapitalFlows } from "@/hooks/use-capital-flows";
 import { calculateAnalytics, calculatePerformanceSeries, calculateTopPerformers } from "@/lib/analytics";
@@ -59,6 +61,7 @@ export function AnalyticsDashboard() {
   const performers = useMemo(() => calculateTopPerformers(filteredTrades), [filteredTrades]);
   const chartData = series.map((point) => ({ ...point, label: new Date(`${point.date}T00:00:00`).toLocaleDateString("en-IN", { month: "short", day: "numeric" }), value: mode === "growth" ? point.cumulativePnLPercent : point.cumulativePnL }));
   const positive = metrics.grossImpact >= 0;
+  const tradeRows = useMemo(() => calculateTradeMetrics(filteredTrades, new Date(), capital), [capital, filteredTrades]);
 
   if (!tradesHydrated || !flowsHydrated) return <main className="min-h-screen bg-[#fbfcfb]" />;
 
@@ -144,6 +147,7 @@ export function AnalyticsDashboard() {
           </Panel>
         </div>
 
+        <ProJournalInsights trades={filteredTrades} rows={tradeRows} />
         <div className="flex items-center gap-2 text-xs text-[#8b948e]"><Info className="size-4" /> Analytics use closed-trade results and your recorded capital flows.</div>
       </div>
       <BottomNav />

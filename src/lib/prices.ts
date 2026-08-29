@@ -71,11 +71,11 @@ export function extractLatestPrices(
   return prices;
 }
 
-export function buildStrikePriceUrl(symbols: string[], now = new Date(), lookbackMinutes = 15, candleInterval = "1m") {
-  const end = new Date(now);
-  end.setDate(end.getDate() + 1);
+export function buildStrikePriceUrl(symbols: string[], now = new Date(), lookbackMinutes = 15, candleInterval = "1m", endDate?: Date) {
+  const end = endDate ? new Date(endDate) : new Date(now);
+  if (!endDate) end.setDate(end.getDate() + 1);
   const to = toIstIso(end);
-  const from = toIstIso(new Date(now.getTime() - lookbackMinutes * 60_000));
+  const from = toIstIso(new Date(end.getTime() - lookbackMinutes * 60_000));
   // Strike only returns ticks when multiple securities are pipe-separated.
   const securities = symbols.map((symbol) => `EQ:${symbol}`).join("|");
   const params = new URLSearchParams({
@@ -106,8 +106,8 @@ async function fetchChunk(
   return extractLatestPrices(payload, symbols);
 }
 
-export async function fetchStrikeTicks(symbol: string, lookbackMinutes = 60 * 24 * 5, candleInterval = "1m", fetchImpl: typeof fetch = fetch) {
-  const response = await fetchImpl(buildStrikePriceUrl([normalizeSymbol(symbol)], new Date(), lookbackMinutes, candleInterval), { headers: { Accept: "application/json" }, cache: "no-store" });
+export async function fetchStrikeTicks(symbol: string, lookbackMinutes = 60 * 24 * 5, candleInterval = "1m", fetchImpl: typeof fetch = fetch, endDate?: Date) {
+  const response = await fetchImpl(buildStrikePriceUrl([normalizeSymbol(symbol)], endDate ?? new Date(), lookbackMinutes, candleInterval, endDate), { headers: { Accept: "application/json" }, cache: "no-store" });
   if (!response.ok) throw new Error(`Strike API responded ${response.status}`);
   const payload = (await response.json()) as StrikePriceTicksResponse;
   const key = Object.keys(payload.data?.ticks ?? {})[0];
