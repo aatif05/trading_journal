@@ -25,6 +25,6 @@ export function useTrades() {
     const updated = nextTrades.find((trade) => trade.id === id);
     if (updated?.name.trim() && updated.entry > 0 && updated.initialQty > 0) void persist(nextTrades);
   }, [mutate, persist, trades]);
-  const updateCmps = useCallback((updates: Array<{ id: string; cmp: number }>) => { const byId = new Map(updates.map((update) => [update.id, update.cmp])); void persist(trades.map((trade) => byId.has(trade.id) ? { ...trade, cmp: byId.get(trade.id)! } : trade)); }, [persist, trades]);
+  const updateCmps = useCallback((updates: Array<{ id: string; cmp: number }>) => { const byId = new Map(updates.map((update) => [update.id, update.cmp])); void mutate((current) => { const nextTrades = (current?.trades ?? trades).map((trade) => byId.has(trade.id) ? { ...trade, cmp: byId.get(trade.id)! } : trade); void fetch("/api/journal", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trades: nextTrades }) }); return { trades: nextTrades }; }, false); }, [mutate, trades]);
   return { trades, setTrades: persist, hydrated: Boolean(data) || Boolean(error), addTrade, updateTrade, updateCmps };
 }

@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { JournalToolbar } from "@/components/journal/journal-toolbar";
 import { KpiGrid } from "@/components/journal/kpi-grid";
-import { ProJournalInsights } from "@/components/journal/pro-journal-insights";
 import { RiskWarning } from "@/components/journal/risk-warning";
 import { TradeReview } from "@/components/journal/trade-review";
 import { TradeTable } from "@/components/journal/trade-table";
@@ -177,7 +176,6 @@ export default function Home() {
         )}
 
         <KpiGrid metrics={metrics} rows={tradeMetrics} />
-        <ProJournalInsights trades={trades} rows={tradeMetrics} />
         {tradeMetrics.filter((metric) => metric.positionStatus === "Closed").slice(0, 1).map((metric) => { const trade = trades.find((item) => item.id === metric.id); return trade ? <TradeReview key={trade.id} trade={trade} metric={metric} /> : null; })}
 
         <section className="overflow-hidden rounded-2xl border border-[#e5e9e6] bg-white shadow-[0_2px_8px_rgba(24,40,30,0.035)]">
