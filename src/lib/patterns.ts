@@ -1,6 +1,6 @@
 import type { PriceTick } from "./prices";
 
-export type PatternCandidate = { symbol: string; pattern: "VCP" | "Darvas Box"; confidence: "Low" | "Medium" | "High"; evidence: string[]; breakoutLevel: number | null };
+export type PatternCandidate = { symbol: string; pattern: "VCP" | "Darvas Box"; confidence: "Low" | "Medium" | "High"; evidence: string[]; breakoutLevel: number | null; series: number[] };
 
 const closes = (ticks: PriceTick[]) => ticks.map((tick) => Number(tick[4])).filter(Number.isFinite);
 const volumes = (ticks: PriceTick[]) => ticks.map((tick) => Number(tick[5])).filter(Number.isFinite);
@@ -15,12 +15,13 @@ export function detectPatterns(symbol: string, ticks: PriceTick[]): PatternCandi
   const high = Math.max(...recent); const low = Math.min(...recent); const last = c.at(-1) ?? 0;
   const nearBreakout = last >= high * 0.97;
   const result: PatternCandidate[] = [];
-  if (recentRange < earlierRange * 0.75 && volumeContracting) result.push({ symbol, pattern: "VCP", confidence: nearBreakout ? "High" : "Medium", evidence: ["20-session range contracted", "Recent volume is declining", nearBreakout ? "Price is near the range high" : "Price remains inside the contraction"], breakoutLevel: high });
-  if (recentRange / Math.max(low, 1) < 0.12 && nearBreakout) result.push({ symbol, pattern: "Darvas Box", confidence: "Medium", evidence: ["Recent range is relatively tight", "Price is near the box ceiling", "Needs a confirmed breakout and volume follow-through"], breakoutLevel: high });
+  if (recentRange < earlierRange * 0.75 && volumeContracting) result.push({ symbol, pattern: "VCP", confidence: nearBreakout ? "High" : "Medium", evidence: ["20-session range contracted", "Recent volume is declining", nearBreakout ? "Price is near the range high" : "Price remains inside the contraction"], breakoutLevel: high, series: recent });
+  if (recentRange / Math.max(low, 1) < 0.12 && nearBreakout) result.push({ symbol, pattern: "Darvas Box", confidence: "Medium", evidence: ["Recent range is relatively tight", "Price is near the box ceiling", "Needs a confirmed breakout and volume follow-through"], breakoutLevel: high, series: recent });
   return result;
 }
 
 export type ThemeSummary = { theme: string; symbols: string[]; return20d: number | null; breadth: number; momentum: "Leading" | "Mixed" | "Lagging" };
+export const INDIAN_MARKET_UNIVERSE = ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "SBIN", "LT", "SUNPHARMA", "BHARTIARTL", "ITC", "AXISBANK", "KOTAKBANK", "MARUTI", "M&M", "TATAMOTORS", "TATASTEEL", "HINDALCO", "ADANIENT", "ADANIPORTS", "NTPC", "POWERGRID", "ONGC", "COALINDIA", "BEL", "HAL", "TRENT", "JIOFIN", "ZOMATO", "DLF", "ETERNAL"];
 const THEME_MAP: Record<string, string> = { RELIANCE: "Energy & Conglomerates", TCS: "IT Services", INFY: "IT Services", HDFCBANK: "Private Banks", ICICIBANK: "Private Banks", SBIN: "Public Banks", LT: "Capital Goods", SUNPHARMA: "Pharma", BHARTIARTL: "Telecom" };
 export function themeForSymbol(symbol: string) { return THEME_MAP[symbol.replace(/^EQ:/, "").toUpperCase()] ?? "Unclassified"; }
 export function summarizeThemes(series: Array<{ symbol: string; ticks: PriceTick[] }>): ThemeSummary[] {
