@@ -75,7 +75,7 @@ export function buildStrikePriceUrl(symbols: string[], now = new Date(), lookbac
   const end = endDate ? new Date(endDate) : new Date(now);
   if (!endDate) end.setDate(end.getDate() + 1);
   const to = toIstIso(end);
-  const from = toIstIso(new Date(now.getTime() - lookbackMinutes * 60_000));
+  const from = toIstIso(new Date(end.getTime() - lookbackMinutes * 60_000));
   // Strike only returns ticks when multiple securities are pipe-separated.
   const securities = symbols.map((symbol) => `EQ:${symbol}`).join("|");
   const params = new URLSearchParams({
