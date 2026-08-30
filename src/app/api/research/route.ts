@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     if (!symbol) return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
     const result = await generateText({
       model: google("gemini-3.6-flash"),
-      instructions: "You are a cautious market research assistant. Never give financial advice or certainty. Use only supplied inputs, state missing data, cite the inputs used, and return concise JSON-like markdown sections: thesis, signals, risks, invalidation, confidence, inputs used.",
+      instructions: "You are a cautious market research assistant. Never give financial advice or certainty. Use only supplied inputs, state missing data, cite the inputs used, and Return plain readable markdown only, with exactly these headings: Thesis, Signals, Risks, Invalidation, Confidence, Inputs used. Do not return JSON, code fences, or key-value objects.",
       prompt: `Research ${symbol}. Mode: ${body.mode ?? "analysis"}. Supplied market inputs: ${JSON.stringify(body.inputs ?? {})}`,
     });
     return NextResponse.json({ symbol, text: result.text, inputs: body.inputs ?? {} });
