@@ -26,6 +26,9 @@ function findDarvasBox(
   ticks: PriceTick[],
   CONFIRM_DAYS = 3,
   LOOKBACK = 40,
+  MAX_BOX_DAYS = 15, // cap the top-to-bottom span so the box stays a genuine
+                      // short consolidation instead of grabbing the deepest
+                      // low anywhere in the whole lookback window
 ): { top: number; bottom: number; topDate: string; bottomDate: string } | null {
   const start = Math.max(0, h.length - LOOKBACK);
   const hi = h.slice(start);
@@ -36,18 +39,33 @@ function findDarvasBox(
   for (let i = 0; i < hi.length - CONFIRM_DAYS; i++) {
     if (hi[i] <= top) continue;
     const holds = hi.slice(i + 1, i + 1 + CONFIRM_DAYS).every((v) => v <= hi[i]);
-    if (holds) { top = hi[i]; topIndex = i; }
+    if (holds) {
+      top = hi[i];
+      topIndex = i;
+    }
   }
   if (topIndex === -1) return null;
 
+  // Only look for the bottom within MAX_BOX_DAYS of the top — not the
+  // remainder of the entire lookback window.
+  const bottomSearchEnd = Math.min(lo.length - CONFIRM_DAYS, topIndex + 1 + MAX_BOX_DAYS);
+
   let bottomIndex = -1;
   let bottom = Infinity;
-  for (let i = topIndex + 1; i < lo.length - CONFIRM_DAYS; i++) {
+  for (let i = topIndex + 1; i < bottomSearchEnd; i++) {
     if (lo[i] >= bottom) continue;
     const holds = lo.slice(i + 1, i + 1 + CONFIRM_DAYS).every((v) => v >= lo[i]);
-    if (holds) { bottom = lo[i]; bottomIndex = i; }
+    if (holds) {
+      bottom = lo[i];
+      bottomIndex = i;
+    }
   }
   if (bottomIndex === -1) return null;
+
+  // Reject boxes that still end up too deep to be a genuine tight
+  // consolidation (Darvas boxes are typically well under ~20% top-to-bottom).
+  const heightPct = (top - bottom) / top;
+  if (heightPct > 0.2) return null;
 
   return {
     top,
