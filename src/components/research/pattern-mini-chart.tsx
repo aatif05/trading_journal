@@ -20,6 +20,8 @@ export function PatternMiniChart({ ticks, ceiling, floor, breakout }: { ticks: T
     series.createPriceLine({ price: breakout, color: "#c48a17", lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: "Breakout" });
     const ma = chart.addSeries(LineSeries, { color: "#4d78a8", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "MA20" });
     ma.setData(ticks.map((tick, index) => ({ time: Math.floor(new Date(tick[0]).getTime() / 1000) as UTCTimestamp, value: values.slice(Math.max(0, index - 19), index + 1).reduce((sum, value) => sum + value, 0) / Math.min(index + 1, 20) })));
+    const ma50 = chart.addSeries(LineSeries, { color: "#b7791f", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "MA50" });
+    ma50.setData(ticks.map((tick, index) => ({ time: Math.floor(new Date(tick[0]).getTime() / 1000) as UTCTimestamp, value: values.slice(Math.max(0, index - 49), index + 1).reduce((sum, value) => sum + value, 0) / Math.min(index + 1, 50) })));
     const lineData = values.map((_, index) => ({ time: (index + 1) as UTCTimestamp }));
     const ceilingLine = chart.addSeries(LineSeries, { color: "#8bb99a", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
     const floorLine = chart.addSeries(LineSeries, { color: "#8bb99a", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
@@ -27,7 +29,7 @@ export function PatternMiniChart({ ticks, ceiling, floor, breakout }: { ticks: T
     floorLine.setData(lineData.map((point) => ({ ...point, value: floor })));
     const baseBand = chart.addSeries(LineSeries, { color: "rgba(139, 185, 154, 0.16)", lineWidth: 3, priceLineVisible: false, lastValueVisible: false });
     baseBand.setData(lineData.map((point) => ({ ...point, value: (ceiling + floor) / 2 })));
-    chart.timeScale().fitContent();
+    chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, ticks.length - 90), to: ticks.length + 2 });
     return () => chart.remove();
   }, [breakout, ceiling, floor, ticks]);
   return <div ref={ref} className="h-32 w-full overflow-hidden rounded-xl border border-[#e8eee9] bg-white" aria-label="Candlestick base formation chart" />;
