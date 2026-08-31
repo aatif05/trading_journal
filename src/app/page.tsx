@@ -38,6 +38,7 @@ export default function Home() {
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
     () => new Set(tradeColumns.map((column) => column.key)),
   );
+  const [reviewTradeId, setReviewTradeId] = useState<string | null>(null);
 
   const {
     refreshTrade,
@@ -94,6 +95,9 @@ export default function Home() {
     updateTrade(id, patch);
     const existingTrade = trades.find((trade) => trade.id === id);
     const candidate = existingTrade ? { ...existingTrade, ...patch } : null;
+    const wasClosed = existingTrade ? calculateTrade(existingTrade).positionStatus === "Closed" : false;
+    const isClosed = candidate ? calculateTrade(candidate).positionStatus === "Closed" : false;
+    if (!wasClosed && isClosed) setReviewTradeId(id);
     const setupFieldChanged = patch.name !== undefined || patch.entry !== undefined || patch.initialQty !== undefined;
     if (candidate?.name.trim() && candidate.entry > 0 && candidate.initialQty > 0 && setupFieldChanged) {
       void refreshTrade(candidate);
@@ -176,7 +180,7 @@ export default function Home() {
         )}
 
         <KpiGrid metrics={metrics} rows={tradeMetrics} />
-        {tradeMetrics.filter((metric) => metric.positionStatus === "Closed").slice(0, 1).map((metric) => { const trade = trades.find((item) => item.id === metric.id); return trade ? <TradeReview key={trade.id} trade={trade} metric={metric} /> : null; })}
+        {reviewTradeId && tradeMetrics.filter((metric) => metric.id === reviewTradeId && metric.positionStatus === "Closed").map((metric) => { const trade = trades.find((item) => item.id === reviewTradeId); return trade ? <TradeReview key={trade.id} trade={trade} metric={metric} onDismiss={() => setReviewTradeId(null)} /> : null; })}
 
         <section className="overflow-hidden rounded-2xl border border-[#e5e9e6] bg-white shadow-[0_2px_8px_rgba(24,40,30,0.035)]">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e9ecea] bg-[#fbfcfb] px-4 py-2.5 text-[10px] text-[#777f7a]">
