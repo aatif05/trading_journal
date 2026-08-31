@@ -36,10 +36,7 @@ function findDarvasBox(
   for (let i = 0; i < hi.length - CONFIRM_DAYS; i++) {
     if (hi[i] <= top) continue;
     const holds = hi.slice(i + 1, i + 1 + CONFIRM_DAYS).every((v) => v <= hi[i]);
-    if (holds) {
-      top = hi[i];
-      topIndex = i;
-    }
+    if (holds) { top = hi[i]; topIndex = i; }
   }
   if (topIndex === -1) return null;
 
@@ -48,10 +45,7 @@ function findDarvasBox(
   for (let i = topIndex + 1; i < lo.length - CONFIRM_DAYS; i++) {
     if (lo[i] >= bottom) continue;
     const holds = lo.slice(i + 1, i + 1 + CONFIRM_DAYS).every((v) => v >= lo[i]);
-    if (holds) {
-      bottom = lo[i];
-      bottomIndex = i;
-    }
+    if (holds) { bottom = lo[i]; bottomIndex = i; }
   }
   if (bottomIndex === -1) return null;
 
