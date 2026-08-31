@@ -7,7 +7,10 @@ export type PatternCandidate = {
   evidence: string[];
   breakoutLevel: number | null;
   stopLevel?: number | null;
+  boxStart?: string | null;  
+  boxEnd?: string | null;     
   series: number[];
+  
 };
 
 const closes = (ticks: PriceTick[]) => ticks.map((tick) => Number(tick[4])).filter(Number.isFinite);
@@ -103,7 +106,7 @@ export function detectPatterns(symbol: string, ticks: PriceTick[]): PatternCandi
   // --- Darvas Box: confirmed top + confirmed bottom, with volume-aware breakout confidence ---
   const h = highs(ticks);
   const l = lows(ticks);
-  const box = findDarvasBox(h, l);
+  const box = findDarvasBox(h, l, ticks);
 
   if (box) {
     const avgVolRecent = avg(v.slice(-10));
@@ -127,6 +130,8 @@ export function detectPatterns(symbol: string, ticks: PriceTick[]): PatternCandi
         ],
         breakoutLevel: box.top,
         stopLevel: box.bottom,
+        boxStart: box.topDate,   
+        boxEnd: box.bottomDate,  
         series: recent,
       });
     }
