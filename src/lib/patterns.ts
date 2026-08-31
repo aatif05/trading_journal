@@ -7,6 +7,8 @@ export type PatternCandidate = {
   evidence: string[];
   breakoutLevel: number | null;
   stopLevel?: number | null;
+  boxStart?: string | null;
+  boxEnd?: string | null;
   series: number[];
 };
 
@@ -18,16 +20,6 @@ const lows = (ticks: PriceTick[]) => ticks.map((tick) => Number(tick[3])).filter
 const avg = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
 const range = (values: number[]) => (values.length ? Math.max(...values) - Math.min(...values) : 0);
 
-/**
- * Finds the most recent Darvas Box in a series of daily highs/lows.
- *
- * A real Darvas Box requires two confirmed stages:
- *  1. A "top" — a high that isn't exceeded for CONFIRM_DAYS bars afterward.
- *  2. A "bottom" — a low (found after the top) that isn't broken for
- *     CONFIRM_DAYS bars afterward.
- *
- * Returns null if no such box can be confirmed within the lookback window.
- */
 function findDarvasBox(
   h: number[],
   l: number[],
@@ -84,7 +76,6 @@ export function detectPatterns(symbol: string, ticks: PriceTick[]): PatternCandi
 
   const result: PatternCandidate[] = [];
 
-  // --- VCP: contraction in range + declining volume, watching for a breakout ---
   if (recentRange < earlierRange * 0.75 && volumeContracting) {
     result.push({
       symbol,
@@ -100,10 +91,9 @@ export function detectPatterns(symbol: string, ticks: PriceTick[]): PatternCandi
     });
   }
 
-  // --- Darvas Box: confirmed top + confirmed bottom, with volume-aware breakout confidence ---
   const h = highs(ticks);
   const l = lows(ticks);
-  const box = findDarvasBox(h, l);
+  const box = findDarvasBox(h, l, ticks);
 
   if (box) {
     const avgVolRecent = avg(v.slice(-10));
@@ -127,6 +117,8 @@ export function detectPatterns(symbol: string, ticks: PriceTick[]): PatternCandi
         ],
         breakoutLevel: box.top,
         stopLevel: box.bottom,
+        boxStart: box.topDate,
+        boxEnd: box.bottomDate,
         series: recent,
       });
     }

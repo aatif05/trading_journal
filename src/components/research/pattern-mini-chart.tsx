@@ -10,9 +10,7 @@ type PatternMiniChartProps = {
   ceiling: number;
   floor: number;
   breakout: number;
-  /** ISO date string (matches tick[0]) where the box/base formation starts. Optional. */
   boxStart?: string | null;
-  /** ISO date string (matches tick[0]) where the box/base formation ends. Optional. */
   boxEnd?: string | null;
 };
 
@@ -62,8 +60,6 @@ export function PatternMiniChart({ ticks, ceiling, floor, breakout, boxStart, bo
       })),
     );
 
-    // Breakout trigger — a full-width reference line is genuinely useful here,
-    // since it's the level you're watching for regardless of when you look at the chart.
     series.createPriceLine({
       price: breakout,
       color: "#c48a17",
@@ -89,9 +85,6 @@ export function PatternMiniChart({ ticks, ceiling, floor, breakout, boxStart, bo
       })),
     );
 
-    // --- Real box rendering: top/bottom lines drawn ONLY across the actual
-    // formation window (boxStart..boxEnd), so it looks like a rectangle over
-    // that period instead of a line stretching across the whole chart. ---
     if (boxStart && boxEnd) {
       const startTime = Math.floor(new Date(boxStart).getTime() / 1000);
       const endTime = Math.floor(new Date(boxEnd).getTime() / 1000);
