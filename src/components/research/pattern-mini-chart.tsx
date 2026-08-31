@@ -1,6 +1,14 @@
 "use client";
 
-import { CandlestickSeries, ColorType, createChart, HistogramSeries, LineSeries, type UTCTimestamp } from "lightweight-charts";
+import {
+  CandlestickSeries,
+  ColorType,
+  createChart,
+  createSeriesMarkers,
+  HistogramSeries,
+  LineSeries,
+  type UTCTimestamp,
+} from "lightweight-charts";
 import { useEffect, useRef } from "react";
 
 type Tick = [string, string, string, string, string, string];
@@ -110,6 +118,34 @@ export function PatternMiniChart({ ticks, ceiling, floor, breakout, boxStart, bo
         boxBottom.setData(inRange.map((time) => ({ time: time as UTCTimestamp, value: floor })));
       }
     }
+
+    // --- Actionable marker on the latest candle, in one of two states:
+    //   - Not yet broken out: an amber "Watch" flag at the trigger price,
+    //     so you can see the level to track live during market hours.
+    //   - Already broken out (as of the last available close): a green
+    //     "Entry" arrow, same as a manually-drawn entry annotation.
+    // This is based on daily closes, so "already broken out" reflects the
+    // most recent completed session, not necessarily the live intraday price.
+    const lastIndex = values.length - 1;
+    const brokeOutNow = values[lastIndex] > breakout;
+
+    createSeriesMarkers(series, [
+      brokeOutNow
+        ? {
+            time: times[lastIndex],
+            position: "belowBar" as const,
+            color: "#15955f",
+            shape: "arrowUp" as const,
+            text: "Entry",
+          }
+        : {
+            time: times[lastIndex],
+            position: "aboveBar" as const,
+            color: "#c48a17",
+            shape: "circle" as const,
+            text: `Watch ₹${breakout.toFixed(2)}`,
+          },
+    ]);
 
     chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, ticks.length - 90), to: ticks.length + 2 });
 
