@@ -31,9 +31,10 @@ const range = (values: number[]) => (values.length ? Math.max(...values) - Math.
 function findDarvasBox(
   h: number[],
   l: number[],
+  ticks: PriceTick[],
   CONFIRM_DAYS = 3,
   LOOKBACK = 40,
-): { top: number; bottom: number } | null {
+): { top: number; bottom: number; topDate: string; bottomDate: string } | null {
   const start = Math.max(0, h.length - LOOKBACK);
   const hi = h.slice(start);
   const lo = l.slice(start);
@@ -43,10 +44,7 @@ function findDarvasBox(
   for (let i = 0; i < hi.length - CONFIRM_DAYS; i++) {
     if (hi[i] <= top) continue;
     const holds = hi.slice(i + 1, i + 1 + CONFIRM_DAYS).every((v) => v <= hi[i]);
-    if (holds) {
-      top = hi[i];
-      topIndex = i;
-    }
+    if (holds) { top = hi[i]; topIndex = i; }
   }
   if (topIndex === -1) return null;
 
@@ -55,14 +53,16 @@ function findDarvasBox(
   for (let i = topIndex + 1; i < lo.length - CONFIRM_DAYS; i++) {
     if (lo[i] >= bottom) continue;
     const holds = lo.slice(i + 1, i + 1 + CONFIRM_DAYS).every((v) => v >= lo[i]);
-    if (holds) {
-      bottom = lo[i];
-      bottomIndex = i;
-    }
+    if (holds) { bottom = lo[i]; bottomIndex = i; }
   }
   if (bottomIndex === -1) return null;
 
-  return { top, bottom };
+  return {
+    top,
+    bottom,
+    topDate: ticks[start + topIndex][0],
+    bottomDate: ticks[start + bottomIndex][0],
+  };
 }
 
 export function detectPatterns(symbol: string, ticks: PriceTick[]): PatternCandidate[] {
