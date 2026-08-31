@@ -1,6 +1,6 @@
 "use client";
 
-import { CandlestickSeries, ColorType, createChart, type UTCTimestamp } from "lightweight-charts";
+import { CandlestickSeries, ColorType, createChart, LineSeries, type UTCTimestamp } from "lightweight-charts";
 import { useEffect, useRef } from "react";
 
 export function PatternMiniChart({ values, ceiling, floor, breakout }: { values: number[]; ceiling: number; floor: number; breakout: number }) {
@@ -13,6 +13,13 @@ export function PatternMiniChart({ values, ceiling, floor, breakout }: { values:
     series.createPriceLine({ price: ceiling, color: "#15955f", lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: "Box high" });
     series.createPriceLine({ price: floor, color: "#9bc9ad", lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: "Box low" });
     series.createPriceLine({ price: breakout, color: "#c48a17", lineWidth: 1, lineStyle: 1, axisLabelVisible: false, title: "Trigger" });
+    const lineData = values.map((_, index) => ({ time: (index + 1) as UTCTimestamp }));
+    const ceilingLine = chart.addSeries(LineSeries, { color: "#8bb99a", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+    const floorLine = chart.addSeries(LineSeries, { color: "#8bb99a", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+    ceilingLine.setData(lineData.map((point) => ({ ...point, value: ceiling })));
+    floorLine.setData(lineData.map((point) => ({ ...point, value: floor })));
+    const baseBand = chart.addSeries(LineSeries, { color: "rgba(139, 185, 154, 0.16)", lineWidth: 3, priceLineVisible: false, lastValueVisible: false });
+    baseBand.setData(lineData.map((point) => ({ ...point, value: (ceiling + floor) / 2 })));
     chart.timeScale().fitContent();
     return () => chart.remove();
   }, [breakout, ceiling, floor, values]);
