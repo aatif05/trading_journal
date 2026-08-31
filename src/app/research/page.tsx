@@ -250,7 +250,7 @@ export default function ResearchPage() {
             </div>
             <p className="text-xs text-[#7b867f]">{marketStatus}</p>
           </div>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
             {marketSeries.length ? (
               marketSeries.map((market) => {
                 const item = patterns.find((candidate) => candidate.symbol === market.symbol);
@@ -288,7 +288,7 @@ export default function ResearchPage() {
                         </div>
                         <span className="shrink-0 text-xs font-bold text-[#11885c]">{item.confidence} confidence</span>
                       </div>
-                      <div className="mt-3 h-48">
+                      <div className="mt-3 h-64">
                         <PatternMiniChart ticks={typedTicks} ceiling={ceiling} floor={floor} breakout={breakout} />
                       </div>
                       <p className="mt-2 text-sm text-[#66716a]">{item.evidence.join(" · ")}</p>
