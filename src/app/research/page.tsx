@@ -10,7 +10,7 @@ import { fetchLatestPrices } from "@/lib/prices";
 import { findMissingStopLossTrades, momentumSignal, safePercent } from "@/lib/risk";
 import { calculateTradeMetrics, formatCurrency } from "@/lib/trades";
 
-const CHART_WINDOW = 30;
+const CHART_WINDOW = 45;
 
 export default function ResearchPage() {
   const { trades } = useTrades();
@@ -289,7 +289,14 @@ export default function ResearchPage() {
                         <span className="shrink-0 text-xs font-bold text-[#11885c]">{item.confidence} confidence</span>
                       </div>
                       <div className="mt-3 h-64">
-                        <PatternMiniChart ticks={typedTicks} ceiling={ceiling} floor={floor} breakout={breakout} />
+                        <PatternMiniChart
+  ticks={typedTicks}
+  ceiling={ceiling}
+  floor={floor}
+  breakout={breakout}
+  boxStart={item.pattern === "Darvas Box" ? item.boxStart : undefined}
+  boxEnd={item.pattern === "Darvas Box" ? item.boxEnd : undefined}
+/>
                       </div>
                       <p className="mt-2 text-sm text-[#66716a]">{item.evidence.join(" · ")}</p>
                     </div>
