@@ -63,18 +63,41 @@ export default function ResearchPage() {
   const missingSL = findMissingStopLossTrades(metrics);
 
   const reentryCandidates = metrics
-    .filter((trade) => trade.positionStatus !== "Closed" && trade.sl > 0)
-    .map((trade) => {
-      const market = marketSeries.find((item) => item.symbol === trade.name.trim().toUpperCase());
-      const closes = market?.ticks.map((tick) => Number(tick[4])).filter(Number.isFinite) ?? [];
-      const current = closes.at(-1) ?? trade.cmp;
-      const ma20 =
-        closes.slice(-20).reduce((sum, value) => sum + value, 0) / Math.max(1, Math.min(20, closes.length));
-      const distance = ma20 ? (Math.abs(current - ma20) / ma20) * 100 : 999;
-      return { trade, current, ma20, distance, eligible: distance <= 6 && current > trade.sl };
-    })
-    .filter((candidate) => candidate.eligible)
-    .sort((a, b) => a.distance - b.distance);
+  .filter((trade) => trade.positionStatus !== "Closed" && trade.sl > 0)
+  .map((trade) => {
+    const market = marketSeries.find((item) => item.symbol === trade.name.trim().toUpperCase());
+    const closes = market?.ticks.map((tick) => Number(tick[4])).filter(Number.isFinite) ?? [];
+    const highs = market?.ticks.map((tick) => Number(tick[2])).filter(Number.isFinite) ?? [];
+    const lows = market?.ticks.map((tick) => Number(tick[3])).filter(Number.isFinite) ?? [];
+
+    const current = closes.at(-1) ?? trade.cmp;
+    const ma20 =
+      closes.slice(-20).reduce((sum, value) => sum + value, 0) / Math.max(1, Math.min(20, closes.length));
+    const distance = ma20 ? (Math.abs(current - ma20) / ma20) * 100 : 999;
+    const nearMa20 = distance <= 6;
+
+    // Tight 2-3 day range: high/low over the last 3 sessions within a small
+    // band relative to price — a short pause while an existing position is held.
+    const recentHighs = highs.slice(-3);
+    const recentLows = lows.slice(-3);
+    const rangePct =
+      recentHighs.length === 3 && current > 0
+        ? ((Math.max(...recentHighs) - Math.min(...recentLows)) / current) * 100
+        : 999;
+    const tightRange = rangePct <= 3;
+
+    return {
+      trade,
+      current,
+      ma20,
+      distance,
+      rangePct,
+      reason: tightRange ? ("tight" as const) : ("ma20" as const),
+      eligible: (nearMa20 || tightRange) && current > trade.sl,
+    };
+  })
+  .filter((candidate) => candidate.eligible)
+  .sort((a, b) => a.distance - b.distance);
 
   async function refresh() {
     if (!symbol) return;
