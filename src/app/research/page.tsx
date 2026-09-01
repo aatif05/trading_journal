@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { PatternMiniChart } from "@/components/research/pattern-mini-chart";
 import type { PatternCandidate, ThemeSummary } from "@/lib/patterns";
-import { PriceTick, detectPocketPivot } from "@/lib/patterns";
+import { detectPocketPivot } from "@/lib/patterns";
 import { AlertTriangle, BrainCircuit, RefreshCw, Search, TrendingDown, TrendingUp } from "lucide-react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { useTrades } from "@/hooks/use-trades";
@@ -85,15 +85,8 @@ export default function ResearchPage() {
         ? ((Math.max(...recentHighs) - Math.min(...recentLows)) / current) * 100
         : 999;
     const tightRange = rangePct <= 3;
-const ticks: PriceTick[] = rawData.map(([date, open, high, low, close, volume]) => [
-  date,
-  parseFloat(open),
-  parseFloat(high),
-  parseFloat(low),
-  parseFloat(close),
-  parseFloat(volume),
-]);
-    const pocketPivot = detectPocketPivot(ticks);
+
+    const pocketPivot = detectPocketPivot(ticksForSymbol);
 
     let reason: "pocket" | "tight" | "ma20" | null = null;
     if (pocketPivot) reason = "pocket";
