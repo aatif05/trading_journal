@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.56",
+    "@vercel/analytics": "^2.0.1",
     "ai": "^7.0.83",
     "drizzle-orm": "^0.45.2",
     "lightweight-charts": "^5.2.1",
