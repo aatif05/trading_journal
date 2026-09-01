@@ -22,6 +22,15 @@ type PatternMiniChartProps = {
   boxEnd?: string | null;
 };
 
+function computeEMA(values: number[], period: number): number[] {
+  const k = 2 / (period + 1);
+  const ema: number[] = [];
+  values.forEach((value, index) => {
+    ema.push(index === 0 ? value : value * k + ema[index - 1] * (1 - k));
+  });
+  return ema;
+}
+
 export function PatternMiniChart({ ticks, ceiling, floor, breakout, boxStart, boxEnd }: PatternMiniChartProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -77,22 +86,28 @@ export function PatternMiniChart({ ticks, ceiling, floor, breakout, boxStart, bo
       title: "Breakout",
     });
 
-    const ma = chart.addSeries(LineSeries, { color: "#4d78a8", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "MA20" });
-    ma.setData(
-      ticks.map((tick, index) => ({
-        time: times[index],
-        value: values.slice(Math.max(0, index - 19), index + 1).reduce((sum, value) => sum + value, 0) / Math.min(index + 1, 20),
-      })),
-    );
+    const ema20 = computeEMA(values, 20);
+    const ema20Series = chart.addSeries(LineSeries, {
+      color: "#4d78a8",
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      title: "EMA20",
+    });
+    ema20Series.setData(times.map((time, i) => ({ time, value: ema20[i] })));
 
-    const ma50 = chart.addSeries(LineSeries, { color: "#b7791f", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "MA50" });
-    ma50.setData(
-      ticks.map((tick, index) => ({
-        time: times[index],
-        value: values.slice(Math.max(0, index - 49), index + 1).reduce((sum, value) => sum + value, 0) / Math.min(index + 1, 50),
-      })),
-    );
+    const ema50 = computeEMA(values, 50);
+    const ema50Series = chart.addSeries(LineSeries, {
+      color: "#b7791f",
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      title: "EMA50",
+    });
+    ema50Series.setData(times.map((time, i) => ({ time, value: ema50[i] })));
 
+    // Real box rendering: top/bottom lines drawn ONLY across the actual
+    // formation window (boxStart..boxEnd), not the whole chart width.
     if (boxStart && boxEnd) {
       const startTime = Math.floor(new Date(boxStart).getTime() / 1000);
       const endTime = Math.floor(new Date(boxEnd).getTime() / 1000);
@@ -119,13 +134,10 @@ export function PatternMiniChart({ ticks, ceiling, floor, breakout, boxStart, bo
       }
     }
 
-    // --- Actionable marker on the latest candle, in one of two states:
-    //   - Not yet broken out: an amber "Watch" flag at the trigger price,
-    //     so you can see the level to track live during market hours.
-    //   - Already broken out (as of the last available close): a green
-    //     "Entry" arrow, same as a manually-drawn entry annotation.
-    // This is based on daily closes, so "already broken out" reflects the
-    // most recent completed session, not necessarily the live intraday price.
+    // Actionable marker on the latest candle: amber "Watch" flag while price
+    // is still below the trigger, or green "Entry" arrow once the last
+    // close has crossed it. Based on daily closes, so it reflects the most
+    // recent completed session rather than a live intraday price.
     const lastIndex = values.length - 1;
     const brokeOutNow = values[lastIndex] > breakout;
 
