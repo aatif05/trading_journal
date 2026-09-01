@@ -12,8 +12,6 @@ import {
 import { useEffect, useRef } from "react";
 import type { PriceTick } from "@/lib/prices";
 
-
-
 type PatternMiniChartProps = {
   ticks: PriceTick[];
   ceiling: number;
