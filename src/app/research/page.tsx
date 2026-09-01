@@ -797,10 +797,8 @@ export default function ResearchPage() {
                         market.symbol,
                     );
 
-                  const windowTicks =
-                    market.ticks.slice(
-                      -CHART_WINDOW,
-                    );
+                  const windowTicks = market.ticks.slice(-CHART_WINDOW);
+                  
 
                   /*
                    * IMPORTANT:
