@@ -25,10 +25,13 @@ const lows = (ticks: PriceTick[]) =>
   ticks.map((tick) => Number(tick[3])).filter(Number.isFinite);
 
 const avg = (values: number[]) =>
-  values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
+  values.reduce((sum, value) => sum + value, 0) /
+  Math.max(1, values.length);
 
 const range = (values: number[]) =>
-  values.length ? Math.max(...values) - Math.min(...values) : 0;
+  values.length
+    ? Math.max(...values) - Math.min(...values)
+    : 0;
 
 /**
  * Finds the most recent Darvas Box: a confirmed top (a high that isn't
@@ -44,7 +47,12 @@ function findDarvasBox(
   CONFIRM_DAYS = 3,
   LOOKBACK = 40,
   MAX_BOX_DAYS = 15,
-): { top: number; bottom: number; topDate: string; bottomDate: string } | null {
+): {
+  top: number;
+  bottom: number;
+  topDate: string;
+  bottomDate: string;
+} | null {
   const start = Math.max(0, h.length - LOOKBACK);
   const hi = h.slice(start);
   const lo = l.slice(start);
@@ -115,8 +123,15 @@ function findSwingPoints(
 ): SwingPoint[] {
   const points: SwingPoint[] = [];
 
-  for (let i = window; i < highArr.length - window; i++) {
-    const highWindow = highArr.slice(i - window, i + window + 1);
+  for (
+    let i = window;
+    i < highArr.length - window;
+    i++
+  ) {
+    const highWindow = highArr.slice(
+      i - window,
+      i + window + 1,
+    );
 
     if (highArr[i] === Math.max(...highWindow)) {
       points.push({
@@ -126,7 +141,10 @@ function findSwingPoints(
       });
     }
 
-    const lowWindow = lowArr.slice(i - window, i + window + 1);
+    const lowWindow = lowArr.slice(
+      i - window,
+      i + window + 1,
+    );
 
     if (lowArr[i] === Math.min(...lowWindow)) {
       points.push({
@@ -181,16 +199,23 @@ function buildContractions(
     const b = points[i + 1];
 
     if (a.type === "high" && b.type === "low") {
-      const segment = volumeSlice.slice(a.index, b.index + 1);
+      const segment = volumeSlice.slice(
+        a.index,
+        b.index + 1,
+      );
 
       const avgVolume = segment.length
-        ? segment.reduce((sum, val) => sum + val, 0) / segment.length
+        ? segment.reduce(
+            (sum, val) => sum + val,
+            0,
+          ) / segment.length
         : 0;
 
       contractions.push({
         high: a.price,
         low: b.price,
-        depthPct: (a.price - b.price) / a.price,
+        depthPct:
+          (a.price - b.price) / a.price,
         avgVolume,
       });
     }
@@ -203,6 +228,9 @@ function buildContractions(
  * Detects a genuine Volatility Contraction Pattern: a sequence of at least
  * two successive pullbacks, each shallower and lower-volume than the last,
  * settling into a tight final pivot.
+ *
+ * IMPORTANT:
+ * This logic is intentionally unchanged from main.
  */
 function detectVCP(
   ticks: PriceTick[],
@@ -219,7 +247,10 @@ function detectVCP(
   if (h.length < 40) return null;
 
   const LOOKBACK = 90;
-  const start = Math.max(0, h.length - LOOKBACK);
+  const start = Math.max(
+    0,
+    h.length - LOOKBACK,
+  );
 
   const points = findSwingPoints(
     h.slice(start),
@@ -240,8 +271,10 @@ function detectVCP(
     (leg, i) =>
       i === 0 ||
       (
-        leg.depthPct <= last[i - 1].depthPct * 1.15 &&
-        leg.avgVolume <= last[i - 1].avgVolume * 1.15
+        leg.depthPct <=
+          last[i - 1].depthPct * 1.15 &&
+        leg.avgVolume <=
+          last[i - 1].avgVolume * 1.15
       ),
   );
 
@@ -255,17 +288,28 @@ function detectVCP(
 
   const lastClose = c.at(-1) ?? 0;
 
-  const nearPivot = lastClose >= pivot * 0.97;
+  const nearPivot =
+    lastClose >= pivot * 0.97;
 
-  const avgVolRecent = avg(v.slice(-10));
-  const avgVolPrior = avg(v.slice(-30, -10));
+  const avgVolRecent = avg(
+    v.slice(-10),
+  );
+
+  const avgVolPrior = avg(
+    v.slice(-30, -10),
+  );
 
   const volumeDry =
     avgVolPrior > 0 &&
     avgVolRecent < avgVolPrior * 0.8;
 
-  const confidence: "Low" | "Medium" | "High" =
-    last.length >= 3 && nearPivot && volumeDry
+  const confidence:
+    | "Low"
+    | "Medium"
+    | "High" =
+    last.length >= 3 &&
+    nearPivot &&
+    volumeDry
       ? "High"
       : nearPivot || volumeDry
         ? "Medium"
@@ -288,14 +332,21 @@ function detectVCP(
 }
 
 /**
- * Detects a Pocket Pivot on the most recent completed bar.
+ * Detects a Pocket Pivot on the latest candle.
  *
- * Rules used:
- * - The latest close must be higher than the previous close.
- * - Latest volume must exceed the maximum volume of a down-close
- *   session during the previous 10 sessions.
+ * Rules:
+ * 1. Latest close must be higher than previous close.
+ * 2. Latest volume must be greater than the highest volume
+ *    recorded on a down-close day during the previous 10 sessions.
  *
- * This is an independent signal and does not alter VCP or Darvas detection.
+ * This is an INDEPENDENT signal.
+ *
+ * It does NOT modify:
+ * - VCP detection
+ * - Darvas detection
+ * - Pattern radar
+ *
+ * It is used only as an additional re-entry signal in page.tsx.
  */
 export function detectPocketPivot(
   ticks: PriceTick[],
@@ -307,9 +358,17 @@ export function detectPocketPivot(
 
   const lastIndex = ticks.length - 1;
 
-  const todayClose = Number(ticks[lastIndex][4]);
-  const previousClose = Number(ticks[lastIndex - 1][4]);
-  const todayVolume = Number(ticks[lastIndex][5]);
+  const todayClose = Number(
+    ticks[lastIndex][4],
+  );
+
+  const previousClose = Number(
+    ticks[lastIndex - 1][4],
+  );
+
+  const todayVolume = Number(
+    ticks[lastIndex][5],
+  );
 
   if (
     !Number.isFinite(todayClose) ||
@@ -326,12 +385,31 @@ export function detectPocketPivot(
 
   let maxDownDayVolume = 0;
 
-  const startIndex = Math.max(1, lastIndex - 10);
+  /*
+   * Compare against the previous 10 sessions.
+   * The current/latest candle is excluded.
+   */
+  const startIndex = Math.max(
+    1,
+    lastIndex - 10,
+  );
 
-  for (let i = startIndex; i < lastIndex; i++) {
-    const close = Number(ticks[i][4]);
-    const previous = Number(ticks[i - 1][4]);
-    const volume = Number(ticks[i][5]);
+  for (
+    let i = startIndex;
+    i < lastIndex;
+    i++
+  ) {
+    const close = Number(
+      ticks[i][4],
+    );
+
+    const previous = Number(
+      ticks[i - 1][4],
+    );
+
+    const volume = Number(
+      ticks[i][5],
+    );
 
     if (
       !Number.isFinite(close) ||
@@ -341,7 +419,7 @@ export function detectPocketPivot(
       continue;
     }
 
-    // Down-close session.
+    // A down-close day is the reference day.
     if (close < previous) {
       maxDownDayVolume = Math.max(
         maxDownDayVolume,
@@ -350,18 +428,20 @@ export function detectPocketPivot(
     }
   }
 
-  // No valid down-volume reference.
+  // No usable down-day volume reference.
   if (maxDownDayVolume <= 0) {
     return null;
   }
 
-  // Today's volume must exceed the largest recent down-day volume.
-  if (todayVolume <= maxDownDayVolume) {
+  if (
+    todayVolume <= maxDownDayVolume
+  ) {
     return null;
   }
 
   const volumeRatio =
-    todayVolume / maxDownDayVolume;
+    todayVolume /
+    maxDownDayVolume;
 
   return {
     volumeRatio,
@@ -382,9 +462,14 @@ export function detectPatterns(
   if (c.length < 30) return [];
 
   const recent = c.slice(-20);
+
   const result: PatternCandidate[] = [];
 
-  // VCP detection remains unchanged.
+  /*
+   * VCP detection.
+   *
+   * Pocket Pivot is intentionally NOT inserted here.
+   */
   const vcp = detectVCP(ticks);
 
   if (vcp) {
@@ -398,7 +483,11 @@ export function detectPatterns(
     });
   }
 
-  // Darvas detection remains unchanged.
+  /*
+   * Darvas detection.
+   *
+   * Pocket Pivot is intentionally NOT inserted here.
+   */
   const h = highs(ticks);
   const l = lows(ticks);
 
@@ -411,15 +500,22 @@ export function detectPatterns(
   if (box) {
     const last = c.at(-1) ?? 0;
 
-    const avgVolRecent = avg(v.slice(-10));
-    const avgVolPrior = avg(v.slice(-30, -10));
+    const avgVolRecent = avg(
+      v.slice(-10),
+    );
+
+    const avgVolPrior = avg(
+      v.slice(-30, -10),
+    );
 
     const volumeRatio =
       avgVolPrior > 0
-        ? avgVolRecent / avgVolPrior
+        ? avgVolRecent /
+          avgVolPrior
         : 0;
 
-    const brokeOut = last > box.top;
+    const brokeOut =
+      last > box.top;
 
     const nearBox =
       last >= box.top * 0.97 &&
@@ -430,7 +526,8 @@ export function detectPatterns(
         symbol,
         pattern: "Darvas Box",
         confidence:
-          brokeOut && volumeRatio >= 1.5
+          brokeOut &&
+          volumeRatio >= 1.5
             ? "High"
             : brokeOut
               ? "Medium"
@@ -497,8 +594,12 @@ export const INDIAN_MARKET_UNIVERSE = [
   "ETERNAL",
 ];
 
-const THEME_MAP: Record<string, string> = {
-  RELIANCE: "Energy & Conglomerates",
+const THEME_MAP: Record<
+  string,
+  string
+> = {
+  RELIANCE:
+    "Energy & Conglomerates",
   TCS: "IT Services",
   INFY: "IT Services",
   HDFCBANK: "Private Banks",
@@ -509,10 +610,14 @@ const THEME_MAP: Record<string, string> = {
   BHARTIARTL: "Telecom",
 };
 
-export function themeForSymbol(symbol: string) {
+export function themeForSymbol(
+  symbol: string,
+) {
   return (
     THEME_MAP[
-      symbol.replace(/^EQ:/, "").toUpperCase()
+      symbol
+        .replace(/^EQ:/, "")
+        .toUpperCase()
     ] ?? "Unclassified"
   );
 }
@@ -532,16 +637,23 @@ export function summarizeThemes(
   >();
 
   for (const item of series) {
-    const c = closes(item.ticks);
+    const c = closes(
+      item.ticks,
+    );
 
-    const theme = themeForSymbol(item.symbol);
+    const theme =
+      themeForSymbol(item.symbol);
 
     const entry =
       c.length >= 21
-        ? (c.at(-1)! / c.at(-21)! - 1) * 100
+        ? (c.at(-1)! /
+            c.at(-21)! -
+            1) *
+          100
         : null;
 
-    const list = grouped.get(theme) ?? [];
+    const list =
+      grouped.get(theme) ?? [];
 
     list.push({
       symbol: item.symbol,
@@ -551,57 +663,79 @@ export function summarizeThemes(
     grouped.set(theme, list);
   }
 
-  const valid = [...grouped.values()]
+  const valid = [
+    ...grouped.values(),
+  ]
     .flatMap((items) =>
-      items.map((item) => item.return20d),
+      items.map(
+        (item) => item.return20d,
+      ),
     )
     .filter(
-      (value): value is number =>
+      (
+        value,
+      ): value is number =>
         value !== null,
     );
 
   const median = valid.length
-    ? valid.reduce((a, b) => a + b, 0) /
-      valid.length
+    ? valid.reduce(
+        (a, b) => a + b,
+        0,
+      ) / valid.length
     : 0;
 
   return [...grouped]
     .map(([theme, items]) => {
       const values = items
-        .map((item) => item.return20d)
+        .map(
+          (item) =>
+            item.return20d,
+        )
         .filter(
-          (value): value is number =>
+          (
+            value,
+          ): value is number =>
             value !== null,
         );
 
-      const return20d = values.length
-        ? values.reduce((a, b) => a + b, 0) /
-          values.length
-        : null;
+      const return20d =
+        values.length
+          ? values.reduce(
+              (a, b) => a + b,
+              0,
+            ) / values.length
+          : null;
 
-      const breadth = values.length
-        ? (
-            values.filter(
-              (value) => value > 0,
+      const breadth =
+        values.length
+          ? (values.filter(
+              (value) =>
+                value > 0,
             ).length /
-            values.length
-          ) * 100
-        : 0;
+              values.length) *
+            100
+          : 0;
 
-      const momentum: ThemeSummary["momentum"] =
+      const momentum:
+        ThemeSummary["momentum"] =
         return20d === null
           ? "Mixed"
-          : return20d > median + 1
+          : return20d >
+              median + 1
             ? "Leading"
-            : return20d < median - 1
+            : return20d <
+                median - 1
               ? "Lagging"
               : "Mixed";
 
       return {
         theme,
-        symbols: items.map(
-          (item) => item.symbol,
-        ),
+        symbols:
+          items.map(
+            (item) =>
+              item.symbol,
+          ),
         return20d,
         breadth,
         momentum,
@@ -609,7 +743,9 @@ export function summarizeThemes(
     })
     .sort(
       (a, b) =>
-        (b.return20d ?? -Infinity) -
-        (a.return20d ?? -Infinity),
+        (b.return20d ??
+          -Infinity) -
+        (a.return20d ??
+          -Infinity),
     );
 }
