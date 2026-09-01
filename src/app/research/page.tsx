@@ -67,11 +67,32 @@ export default function ResearchPage() {
     .map((trade) => {
       const market = marketSeries.find((item) => item.symbol === trade.name.trim().toUpperCase());
       const closes = market?.ticks.map((tick) => Number(tick[4])).filter(Number.isFinite) ?? [];
+      const highs = market?.ticks.map((tick) => Number(tick[2])).filter(Number.isFinite) ?? [];
+      const lows = market?.ticks.map((tick) => Number(tick[3])).filter(Number.isFinite) ?? [];
+
       const current = closes.at(-1) ?? trade.cmp;
       const ma20 =
         closes.slice(-20).reduce((sum, value) => sum + value, 0) / Math.max(1, Math.min(20, closes.length));
       const distance = ma20 ? (Math.abs(current - ma20) / ma20) * 100 : 999;
-      return { trade, current, ma20, distance, eligible: distance <= 6 && current > trade.sl };
+      const nearMa20 = distance <= 6;
+
+      const recentHighs = highs.slice(-3);
+      const recentLows = lows.slice(-3);
+      const rangePct =
+        recentHighs.length === 3 && current > 0
+          ? ((Math.max(...recentHighs) - Math.min(...recentLows)) / current) * 100
+          : 999;
+      const tightRange = rangePct <= 3;
+
+      return {
+        trade,
+        current,
+        ma20,
+        distance,
+        rangePct,
+        reason: tightRange ? ("tight" as const) : ("ma20" as const),
+        eligible: (nearMa20 || tightRange) && current > trade.sl,
+      };
     })
     .filter((candidate) => candidate.eligible)
     .sort((a, b) => a.distance - b.distance);
@@ -182,11 +203,13 @@ export default function ResearchPage() {
               <p className="text-xs text-[#7b867f]">Decision support, not a buy signal</p>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {reentryCandidates.map(({ trade, current, ma20, distance }) => (
+              {reentryCandidates.map(({ trade, current, ma20, distance, rangePct, reason }) => (
                 <div key={trade.id} className="rounded-xl bg-[#f7f9f7] p-4">
                   <div className="flex items-center justify-between">
                     <p className="font-bold">{trade.name}</p>
-                    <span className="text-xs font-bold text-[#11885c]">{distance.toFixed(1)}% from MA20</span>
+                    <span className="text-xs font-bold text-[#11885c]">
+                      {reason === "tight" ? `Tight ${rangePct.toFixed(1)}% range (3d)` : `${distance.toFixed(1)}% from MA20`}
+                    </span>
                   </div>
                   <p className="mt-2 text-sm text-[#66716a]">
                     CMP {formatCurrency(current)} · MA20 {formatCurrency(ma20)} · invalidation{" "}
@@ -241,7 +264,6 @@ export default function ResearchPage() {
           </section>
         </div>
 
-        {/* Pattern radar — full width, mini charts windowed to the last CHART_WINDOW sessions */}
         <section className="mt-4 rounded-2xl border border-[#e2e9e3] bg-white p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -255,9 +277,6 @@ export default function ResearchPage() {
               marketSeries.map((market) => {
                 const item = patterns.find((candidate) => candidate.symbol === market.symbol);
 
-                // Zoom the chart to the last CHART_WINDOW sessions so recent price
-                // action (what actually matters for spotting a base/breakout)
-                // isn't squeezed into a sliver at the edge of a full 1-year chart.
                 const windowTicks = market.ticks.slice(-CHART_WINDOW);
                 const typedTicks = windowTicks as [string, string, string, string, string, string][];
 
@@ -265,8 +284,6 @@ export default function ResearchPage() {
                 const windowLows = windowTicks.map((tick) => Number(tick[3])).filter(Number.isFinite);
 
                 if (item) {
-                  // Prefer the real box/pivot levels from full-history detection,
-                  // but widen to the visible window if a level sits outside it.
                   const ceiling = Math.max(item.breakoutLevel ?? -Infinity, ...windowHighs);
                   const floor =
                     item.pattern === "Darvas Box" && item.stopLevel != null
@@ -290,13 +307,13 @@ export default function ResearchPage() {
                       </div>
                       <div className="mt-3 h-64">
                         <PatternMiniChart
-  ticks={typedTicks}
-  ceiling={ceiling}
-  floor={floor}
-  breakout={breakout}
-  boxStart={item.pattern === "Darvas Box" ? item.boxStart : undefined}
-  boxEnd={item.pattern === "Darvas Box" ? item.boxEnd : undefined}
-/>
+                          ticks={typedTicks}
+                          ceiling={ceiling}
+                          floor={floor}
+                          breakout={breakout}
+                          boxStart={item.pattern === "Darvas Box" ? item.boxStart : undefined}
+                          boxEnd={item.pattern === "Darvas Box" ? item.boxEnd : undefined}
+                        />
                       </div>
                       <p className="mt-2 text-sm text-[#66716a]">{item.evidence.join(" · ")}</p>
                     </div>
@@ -314,7 +331,7 @@ export default function ResearchPage() {
                       </div>
                       <span className="shrink-0 text-xs font-bold text-[#7b867f]">Watching</span>
                     </div>
-                    <div className="mt-3 h-48">
+                    <div className="mt-3 h-64">
                       <PatternMiniChart
                         ticks={typedTicks}
                         ceiling={Math.max(...windowHighs)}
@@ -355,7 +372,6 @@ export default function ResearchPage() {
           </p>
         </section>
 
-        {/* Theme pulse — moved below Pattern radar, now a horizontal card grid instead of a cramped sidebar */}
         <section className="mt-4 rounded-2xl border border-[#e2e9e3] bg-white p-5">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7b867f]">Theme pulse</p>
           <h2 className="mt-1 text-xl font-bold">Your themes vs leaders</h2>
