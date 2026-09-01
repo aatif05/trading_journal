@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { PatternMiniChart } from "@/components/research/pattern-mini-chart";
 import type { PatternCandidate, ThemeSummary } from "@/lib/patterns";
+import { detectPocketPivot } from "@/lib/patterns";
 import { AlertTriangle, BrainCircuit, RefreshCw, Search, TrendingDown, TrendingUp } from "lucide-react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { useTrades } from "@/hooks/use-trades";
@@ -63,39 +64,45 @@ export default function ResearchPage() {
   const missingSL = findMissingStopLossTrades(metrics);
 
   const reentryCandidates = metrics
-    .filter((trade) => trade.positionStatus !== "Closed" && trade.sl > 0)
-    .map((trade) => {
-      const market = marketSeries.find((item) => item.symbol === trade.name.trim().toUpperCase());
-      const closes = market?.ticks.map((tick) => Number(tick[4])).filter(Number.isFinite) ?? [];
-      const highs = market?.ticks.map((tick) => Number(tick[2])).filter(Number.isFinite) ?? [];
-      const lows = market?.ticks.map((tick) => Number(tick[3])).filter(Number.isFinite) ?? [];
+  .filter((trade) => trade.positionStatus !== "Closed" && trade.sl > 0)
+  .map((trade) => {
+    const market = marketSeries.find((item) => item.symbol === trade.name.trim().toUpperCase());
+    const ticksForSymbol = (market?.ticks ?? []) as [string, string, string, string, string, string][];
+    const closesArr = ticksForSymbol.map((tick) => Number(tick[4])).filter(Number.isFinite);
+    const highsArr = ticksForSymbol.map((tick) => Number(tick[2])).filter(Number.isFinite);
+    const lowsArr = ticksForSymbol.map((tick) => Number(tick[3])).filter(Number.isFinite);
 
-      const current = closes.at(-1) ?? trade.cmp;
-      const ma20 =
-        closes.slice(-20).reduce((sum, value) => sum + value, 0) / Math.max(1, Math.min(20, closes.length));
-      const distance = ma20 ? (Math.abs(current - ma20) / ma20) * 100 : 999;
-      const nearMa20 = distance <= 6;
+    const current = closesArr.at(-1) ?? trade.cmp;
+    const ma20 =
+      closesArr.slice(-20).reduce((sum, value) => sum + value, 0) / Math.max(1, Math.min(20, closesArr.length));
+    const distance = ma20 ? (Math.abs(current - ma20) / ma20) * 100 : 999;
+    const nearMa20 = distance <= 6;
 
-      const recentHighs = highs.slice(-3);
-      const recentLows = lows.slice(-3);
-      const rangePct =
-        recentHighs.length === 3 && current > 0
-          ? ((Math.max(...recentHighs) - Math.min(...recentLows)) / current) * 100
-          : 999;
-      const tightRange = rangePct <= 3;
+    const recentHighs = highsArr.slice(-3);
+    const recentLows = lowsArr.slice(-3);
+    const rangePct =
+      recentHighs.length === 3 && current > 0
+        ? ((Math.max(...recentHighs) - Math.min(...recentLows)) / current) * 100
+        : 999;
+    const tightRange = rangePct <= 3;
 
-      return {
-        trade,
-        current,
-        ma20,
-        distance,
-        rangePct,
-        reason: tightRange ? ("tight" as const) : ("ma20" as const),
-        eligible: (nearMa20 || tightRange) && current > trade.sl,
-      };
-    })
-    .filter((candidate) => candidate.eligible)
-    .sort((a, b) => a.distance - b.distance);
+    const pocketPivot = detectPocketPivot(ticksForSymbol);
+
+    let reason: "pocket" | "tight" | "ma20" | null = null;
+    if (pocketPivot) reason = "pocket";
+    else if (tightRange) reason = "tight";
+    else if (nearMa20) reason = "ma20";
+
+    // Never add to a loser: price must clear both the stop AND the original
+    // entry. Every trend-following framework here (Minervini, O'Neil,
+    // Darvas, Turtle Traders) treats "adding below your own entry" as
+    // averaging down, not pyramiding — a rule violation, not a strategy.
+    const eligible = reason !== null && current > trade.sl && current > trade.entry;
+
+    return { trade, current, ma20, distance, rangePct, reason, pocketPivot, eligible };
+  })
+  .filter((candidate) => candidate.eligible)
+  .sort((a, b) => a.distance - b.distance);
 
   async function refresh() {
     if (!symbol) return;
@@ -203,14 +210,18 @@ export default function ResearchPage() {
               <p className="text-xs text-[#7b867f]">Decision support, not a buy signal</p>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {reentryCandidates.map(({ trade, current, ma20, distance, rangePct, reason }) => (
-                <div key={trade.id} className="rounded-xl bg-[#f7f9f7] p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold">{trade.name}</p>
-                    <span className="text-xs font-bold text-[#11885c]">
-                      {reason === "tight" ? `Tight ${rangePct.toFixed(1)}% range (3d)` : `${distance.toFixed(1)}% from MA20`}
-                    </span>
-                  </div>
+              {reentryCandidates.map(({ trade, current, ma20, distance, rangePct, reason, pocketPivot }) => (
+  <div key={trade.id} className="rounded-xl bg-[#f7f9f7] p-4">
+    <div className="flex items-center justify-between">
+      <p className="font-bold">{trade.name}</p>
+      <span className="text-xs font-bold text-[#11885c]">
+        {reason === "pocket"
+          ? `Pocket pivot · ${pocketPivot?.volumeRatio.toFixed(1)}x vol`
+          : reason === "tight"
+            ? `Tight ${rangePct.toFixed(1)}% range (3d)`
+            : `${distance.toFixed(1)}% from MA20`}
+      </span>
+    </div>
                   <p className="mt-2 text-sm text-[#66716a]">
                     CMP {formatCurrency(current)} · MA20 {formatCurrency(ma20)} · invalidation{" "}
                     {formatCurrency(trade.sl)}
@@ -219,10 +230,13 @@ export default function ResearchPage() {
                     Risk/share {formatCurrency(Math.abs(current - trade.sl))} · proposed zone{" "}
                     {formatCurrency(ma20 * 0.98)}–{formatCurrency(ma20 * 1.02)} · reward/risk requires a target
                   </p>
-                  <p className="mt-2 text-xs text-[#7b867f]">
-                    Consider only after price confirmation, supportive volume, and a defined stop. Respect the
-                    original position risk.
-                  </p>
+                  {reason === "pocket" && pocketPivot && (
+  <p className="mt-2 text-xs text-[#4d78a8]">{pocketPivot.evidence.join(" · ")}</p>
+)}
+<p className="mt-2 text-xs text-[#7b867f]">
+  Consider only after price confirmation, supportive volume, and a defined stop. Respect the
+  original position risk.
+</p>
                 </div>
               ))}
             </div>
