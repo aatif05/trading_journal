@@ -170,6 +170,45 @@ function detectVCP(ticks: PriceTick[]): { pivot: number; confidence: "Low" | "Me
   };
 }
 
+/**
+ * Detects a pocket pivot on the most recent bar: an up day whose volume
+ * exceeds the single largest down-day volume of the prior 10 sessions.
+ * This is a genuine early re-entry/add-on signal (distinct from a full
+ * breakout) used by O'Neil/Minervini-style trend traders to catch
+ * institutional buying inside a base, before price actually clears it.
+ */
+export function detectPocketPivot(ticks: PriceTick[]): { volumeRatio: number; evidence: string[] } | null {
+  const c = closes(ticks);
+  const v = volumes(ticks);
+  if (c.length < 12) return null;
+
+  const lastIndex = c.length - 1;
+  const isUpDay = c[lastIndex] > c[lastIndex - 1];
+  if (!isUpDay) return null;
+
+  let maxDownVolume = 0;
+  for (let i = Math.max(1, lastIndex - 10); i < lastIndex; i++) {
+    if (c[i] < c[i - 1] && v[i] > maxDownVolume) {
+      maxDownVolume = v[i];
+    }
+  }
+
+  if (maxDownVolume === 0) return null;
+
+  const todayVolume = v[lastIndex];
+  if (todayVolume <= maxDownVolume) return null;
+
+  const volumeRatio = todayVolume / maxDownVolume;
+
+  return {
+    volumeRatio,
+    evidence: [
+      `Today's volume is ${volumeRatio.toFixed(2)}x the largest down-day volume in the last 10 sessions`,
+      "Price closed higher on the day",
+    ],
+  };
+}
+
 export function detectPatterns(symbol: string, ticks: PriceTick[]): PatternCandidate[] {
   const c = closes(ticks);
   const v = volumes(ticks);
