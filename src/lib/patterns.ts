@@ -358,16 +358,14 @@ export function detectPocketPivot(
 
   const lastIndex = ticks.length - 1;
 
-  const todayClose = Number(
-    ticks[lastIndex][4],
-  );
+  const latestTick = ticks[lastIndex];
 
+  const todayClose = Number(latestTick[4]);
   const previousClose = Number(
     ticks[lastIndex - 1][4],
   );
-
   const todayVolume = Number(
-    ticks[lastIndex][5],
+    latestTick[5],
   );
 
   if (
@@ -378,17 +376,34 @@ export function detectPocketPivot(
     return null;
   }
 
-  // Pocket Pivot requires an up-close.
+  /*
+   * ------------------------------------------------------------
+   * IMPORTANT:
+   * Only the latest candle can generate a current Pocket Pivot.
+   *
+   * This prevents an old Pocket Pivot from being displayed as a
+   * current re-entry opportunity.
+   * ------------------------------------------------------------
+   */
+  if (lastIndex !== ticks.length - 1) {
+    return null;
+  }
+
+  /*
+   * Pocket Pivot requires an up-close.
+   */
   if (todayClose <= previousClose) {
     return null;
   }
 
+  /*
+   * Find the highest volume on a down-close day
+   * during the previous 10 sessions.
+   *
+   * The current candle is deliberately excluded.
+   */
   let maxDownDayVolume = 0;
 
-  /*
-   * Compare against the previous 10 sessions.
-   * The current/latest candle is excluded.
-   */
   const startIndex = Math.max(
     1,
     lastIndex - 10,
@@ -419,7 +434,10 @@ export function detectPocketPivot(
       continue;
     }
 
-    // A down-close day is the reference day.
+    /*
+     * Down-close session:
+     * today's close < previous day's close
+     */
     if (close < previous) {
       maxDownDayVolume = Math.max(
         maxDownDayVolume,
@@ -428,11 +446,18 @@ export function detectPocketPivot(
     }
   }
 
-  // No usable down-day volume reference.
+  /*
+   * We need at least one valid down-volume reference.
+   */
   if (maxDownDayVolume <= 0) {
     return null;
   }
 
+  /*
+   * Pocket Pivot requires today's volume to exceed
+   * the highest down-day volume from the previous
+   * 10 sessions.
+   */
   if (
     todayVolume <= maxDownDayVolume
   ) {
@@ -446,8 +471,11 @@ export function detectPocketPivot(
   return {
     volumeRatio,
     evidence: [
-      `Today's volume is ${volumeRatio.toFixed(2)}x the largest down-day volume in the previous 10 sessions`,
-      "Price closed higher on the day",
+      `Today's volume is ${volumeRatio.toFixed(
+        2,
+      )}x the largest down-day volume in the previous 10 sessions`,
+      "Price closed higher on the latest session",
+      "Pocket Pivot occurred on the latest available session",
     ],
   };
 }
