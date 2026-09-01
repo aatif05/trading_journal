@@ -209,7 +209,9 @@ export default function ResearchPage() {
                 <div key={trade.id} className="rounded-xl bg-[#f7f9f7] p-4">
                   <div className="flex items-center justify-between">
                     <p className="font-bold">{trade.name}</p>
-                    <span className="text-xs font-bold text-[#11885c]">{distance.toFixed(1)}% from MA20</span>
+                    <span className="text-xs font-bold text-[#11885c]">
+  {reason === "tight" ? `Tight ${rangePct.toFixed(1)}% range (3d)` : `${distance.toFixed(1)}% from MA20`}
+</span>
                   </div>
                   <p className="mt-2 text-sm text-[#66716a]">
                     CMP {formatCurrency(current)} · MA20 {formatCurrency(ma20)} · invalidation{" "}
