@@ -10,11 +10,10 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import { useEffect, useRef } from "react";
-
-type Tick = [string, string, string, string, string, string];
+import type { PriceTick } from "@/lib/prices";
 
 type PatternMiniChartProps = {
-  ticks: Tick[];
+  ticks: PriceTick[];
   ceiling: number;
   floor: number;
   breakout: number;
