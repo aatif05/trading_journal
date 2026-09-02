@@ -113,23 +113,23 @@ export default function Home() {
     : null;
 
   return (
-    <main className="min-h-screen bg-[#f7f8fa] pb-20">
-      <header className="border-b border-[#e7ebe8] bg-white">
+    <main className="min-h-screen bg-[#f4f6f3] pb-20">
+      <header className="border-b border-[#273a31] bg-[#14211b] text-white shadow-[0_8px_24px_rgba(13,28,20,0.12)]">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-3.5 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#18251e] text-white shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#c7f36a] text-[#14211b] shadow-[0_4px_14px_rgba(199,243,106,0.2)]">
               <Sparkles className="h-4 w-4" />
             </span>
             <div>
-              <h1 className="text-sm font-bold tracking-tight">Ledgerly</h1>
-              <p className="text-[9px] uppercase tracking-[0.14em] text-[#929a95]">
+              <h1 className="text-sm font-extrabold tracking-tight">Ledgerly</h1>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#98aaa0]">
                 Trading journal
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-[#e5e9e6] bg-[#fafbfa] px-3 py-1.5 text-[10px] font-medium text-[#69716c]">
+          <div className="flex items-center gap-2 rounded-full border border-[#40564a] bg-[#1c2c24] px-3 py-1.5 text-[10px] font-semibold text-[#b9c8bf]">
             {hydrated ? (
-              <LockKeyhole className="h-3 w-3 text-[#1b9762]" />
+              <LockKeyhole className="h-3 w-3 text-[#c7f36a]" />
             ) : (
               <CloudOff className="h-3 w-3" />
             )}
@@ -138,7 +138,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1500px] flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+      <div className="mx-auto flex max-w-[1500px] flex-col gap-5 px-3 py-5 sm:px-6 sm:py-7">
         <RiskWarning metrics={tradeMetrics} />
   <JournalToolbar
           query={query}
@@ -182,14 +182,14 @@ export default function Home() {
         <KpiGrid metrics={metrics} rows={tradeMetrics} />
         {reviewTradeId && tradeMetrics.filter((metric) => metric.id === reviewTradeId && metric.positionStatus === "Closed").map((metric) => { const trade = trades.find((item) => item.id === reviewTradeId); return trade ? <TradeReview key={trade.id} trade={trade} metric={metric} onDismiss={() => setReviewTradeId(null)} /> : null; })}
 
-        <section className="overflow-hidden rounded-2xl border border-[#e5e9e6] bg-white shadow-[0_2px_8px_rgba(24,40,30,0.035)]">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e9ecea] bg-[#fbfcfb] px-4 py-2.5 text-[10px] text-[#777f7a]">
+        <section className="overflow-hidden rounded-2xl border border-[#dbe4dd] bg-white shadow-[0_12px_30px_rgba(19,39,28,0.06)]">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e5ebe7] bg-[#f8faf8] px-4 py-3 text-[10px] font-medium text-[#718078]">
             <span>
               Showing <strong className="text-[#303a34]">{filteredTrades.length}</strong> of{" "}
               <strong className="text-[#303a34]">{trades.length}</strong> trades
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#25a66b]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#79c78f] shadow-[0_0_0_3px_rgba(121,199,143,0.14)]" />
               Portfolio capital: <strong>{formatCurrency(capital, 0)}</strong>
             </span>
           </div>

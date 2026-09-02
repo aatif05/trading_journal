@@ -34,7 +34,7 @@ type Props = {
 };
 
 const iconButton =
-  "inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#667069] transition hover:bg-[#f0f3f1] hover:text-[#17201b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8bc8aa]";
+  "inline-flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-[#5f6e66] transition hover:border-[#d7e2da] hover:bg-white hover:text-[#17251d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8e778]";
 
 export function JournalToolbar({
   query,
@@ -70,7 +70,7 @@ export function JournalToolbar({
   };
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-[#e0e8e2] bg-[#f8faf8] p-2.5 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8a928d]" />
@@ -80,11 +80,11 @@ export function JournalToolbar({
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Search trades"
             aria-label="Search trades"
-            className="h-9 w-44 rounded-lg border border-[#e3e7e4] bg-white pl-9 pr-3 text-xs outline-none transition focus:border-[#94ccb0] focus:ring-2 focus:ring-[#e0f2e9]"
+            className="h-9 w-52 rounded-xl border border-[#dbe5de] bg-white pl-9 pr-3 text-xs font-medium outline-none transition placeholder:text-[#9aa79f] focus:border-[#8dba9f] focus:ring-2 focus:ring-[#e4f4e9]"
           />
         </label>
-        <label className="flex h-9 items-center gap-2 rounded-lg border border-[#e3e7e4] bg-white px-3 text-xs font-medium">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#27a66b]" />
+        <label className="flex h-9 items-center gap-2 rounded-xl border border-[#dbe5de] bg-white px-3 text-xs font-medium">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#79c78f]" />
           Status:
           <select
             value={status}
@@ -105,7 +105,7 @@ export function JournalToolbar({
         </label>
 
         <details className="relative">
-          <summary className="flex h-9 list-none items-center gap-2 rounded-lg border border-[#e3e7e4] bg-white px-3 text-xs font-semibold hover:bg-[#fafbfa]">
+          <summary className="flex h-9 list-none items-center gap-2 rounded-xl border border-[#dbe5de] bg-white px-3 text-xs font-semibold transition hover:border-[#c8d8ce] hover:bg-[#fbfcfb]">
             <Columns3 className="h-3.5 w-3.5" />
             Columns
           </summary>
@@ -142,7 +142,7 @@ export function JournalToolbar({
           <RefreshCw className={`h-4 w-4 ${refreshingPrices ? "animate-spin" : ""}`} />
         </button>
         <button
-          className={`${iconButton} bg-[#17201b] text-white hover:bg-[#2c3931] hover:text-white`}
+          className={`${iconButton} border-[#15251c] bg-[#17251d] text-white shadow-[0_3px_8px_rgba(19,37,29,0.15)] hover:border-[#17251d] hover:bg-[#2b4034] hover:text-white`}
           onClick={onAdd}
           aria-label="Add trade"
           title="Add trade"
