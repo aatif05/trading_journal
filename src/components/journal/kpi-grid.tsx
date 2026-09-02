@@ -115,7 +115,7 @@ export function KpiGrid({ metrics, rows = [] }: { metrics: PortfolioMetrics; row
   const popupDisabled = new Set(["Total trades", "Open positions", "Win rate"]);
 
   return (
-    <section aria-label="Portfolio summary" className="relative z-50 grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
+    <section aria-label="Portfolio summary" className="relative z-50 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       {cards.map(({ label, value, detail, tone = "neutral", icon: Icon, items }) => {
         const cardContent = (
           <>
@@ -127,12 +127,12 @@ export function KpiGrid({ metrics, rows = [] }: { metrics: PortfolioMetrics; row
         return (
           <div key={label} className={`relative ${openLabel === label ? "z-[70]" : "z-0"}`}>
             {popupDisabled.has(label) ? (
-              <div className="block w-full rounded-2xl border border-[#e8ebe9] bg-white p-3.5 text-left shadow-[0_1px_3px_rgba(20,40,30,0.04)]">
+              <div className="block w-full rounded-2xl border border-[#dfe7e1] bg-white p-4 text-left shadow-[0_4px_12px_rgba(20,40,30,0.035)]">
                 {cardContent}
               </div>
             ) : (
               <>
-                <button type="button" onClick={() => setOpenLabel(openLabel === label ? null : label)} className="block w-full rounded-2xl border border-[#e8ebe9] bg-white p-3.5 text-left shadow-[0_1px_3px_rgba(20,40,30,0.04)] transition hover:border-[#bfd6c8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8bc8aa]">
+                <button type="button" onClick={() => setOpenLabel(openLabel === label ? null : label)} className="block w-full rounded-2xl border border-[#dfe7e1] bg-white p-4 text-left shadow-[0_4px_12px_rgba(20,40,30,0.035)] transition hover:-translate-y-0.5 hover:border-[#bdd4c5] hover:shadow-[0_8px_18px_rgba(20,40,30,0.07)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8e778]">
                   {cardContent}
                 </button>
                 {openLabel === label && (

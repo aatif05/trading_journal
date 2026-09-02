@@ -30,17 +30,17 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-[#e5e9e6] bg-white/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-[#31483c] bg-[#14211b]/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 text-[#c8d4cd] shadow-[0_-8px_24px_rgba(13,28,20,0.14)] backdrop-blur"
     >
       <div className="journal-scrollbar mx-auto flex max-w-5xl items-center justify-start gap-1 overflow-x-auto sm:justify-center">
         {items.map(({ label, icon: Icon, href }) => {
           const active = href === pathname;
           const className = `flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-medium transition sm:text-[11px] ${
             active
-              ? "bg-[#e9ecea] text-[#202923]"
+              ? "bg-[#c7f36a] text-[#14211b]"
               : href
-                ? "text-[#727b75] hover:bg-[#f5f7f6]"
-                : "text-[#a0a7a2]"
+                ? "text-[#aebdb4] hover:bg-[#253a2e] hover:text-white"
+                : "text-[#63756b]"
           }`;
 
           return href ? (

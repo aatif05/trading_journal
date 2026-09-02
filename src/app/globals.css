@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f8fa;
-  --foreground: #17201b;
-  --muted: #747d77;
-  --line: #e8ebe9;
-  --green: #15955f;
-  --green-soft: #eaf8f1;
-  --amber: #dc8a08;
-  --red: #e14f69;
+  --background: #f4f6f3;
+  --foreground: #18231e;
+  --muted: #6f7d76;
+  --line: #dfe6e1;
+  --green: #168d5e;
+  --green-soft: #e3f5eb;
+  --amber: #bd7812;
+  --red: #d94f63;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-manrope);
 }
 
 * {
@@ -24,8 +24,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), Arial, sans-serif;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 button,
@@ -40,6 +41,7 @@ button {
 
 button:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 ::selection {
@@ -87,5 +89,12 @@ button:disabled {
 
 .cell-number {
   text-align: right;
+  font-family: var(--font-dm-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-family: var(--font-dm-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
 }
