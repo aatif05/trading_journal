@@ -6,14 +6,21 @@ import {
   useState,
 } from "react";
 
-import { PatternMiniChart } from "@/components/research/pattern-mini-chart";
+import {
+  PatternMiniChart,
+} from "@/components/research/pattern-mini-chart";
 
 import {
-  detectPocketPivot,
+  classifyEntrySetup,
+  classifyReEntry,
+  detectHealthyTrend,
+  detectHealthyPullback,
 } from "@/lib/patterns";
 
 import type {
+  EntryClassification,
   PatternCandidate,
+  ReEntryClassification,
   ThemeSummary,
 } from "@/lib/patterns";
 
@@ -26,8 +33,13 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { BottomNav } from "@/components/layout/bottom-nav";
-import { useTrades } from "@/hooks/use-trades";
+import {
+  BottomNav,
+} from "@/components/layout/bottom-nav";
+
+import {
+  useTrades,
+} from "@/hooks/use-trades";
 
 import {
   fetchLatestPrices,
@@ -50,59 +62,437 @@ import {
 
 const CHART_WINDOW = 45;
 
-export default function ResearchPage() {
-  const { trades } = useTrades();
+const STATE_CLASS: Record<
+  string,
+  string
+> = {
+  ENTRY:
+    "bg-[#e5f7ed] text-[#087443]",
+  "STRONG WATCH":
+    "bg-[#edf6ff] text-[#1c5d91]",
+  "HEALTHY PULLBACK":
+    "bg-[#fff6df] text-[#8b6414]",
+  "EXTENDED — DON'T CHASE":
+    "bg-[#fff0e8] text-[#a64a20]",
+  "RE-ENTRY WATCH":
+    "bg-[#eeeaff] text-[#5c45a5]",
+  BREAKDOWN:
+    "bg-[#ffe9ed] text-[#ad3044]",
+};
 
-  const symbols = useMemo(
-    () =>
-      [
-        ...new Set(
-          trades
-            .map((t) =>
-              t.name
-                .trim()
-                .toUpperCase(),
-            )
-            .filter(Boolean),
-        ),
-      ],
-    [trades],
+function StateBadge({
+  state,
+}: {
+  state: string;
+}) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-[11px] font-extrabold tracking-wide ${
+        STATE_CLASS[state] ??
+        "bg-[#f0f2f0] text-[#66716a]"
+      }`}
+    >
+      {state}
+    </span>
+  );
+}
+
+function SetupMetrics({
+  setup,
+}: {
+  setup: EntryClassification;
+}) {
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="rounded-xl bg-[#f7f9f7] p-3">
+        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">
+          10 EMA
+        </p>
+        <p className="mt-1 font-bold">
+          {setup.trend.ema10
+            ? formatCurrency(
+                setup.trend.ema10,
+              )
+            : "—"}
+        </p>
+      </div>
+
+      <div className="rounded-xl bg-[#f7f9f7] p-3">
+        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">
+          21 EMA
+        </p>
+        <p className="mt-1 font-bold">
+          {setup.trend.ema21
+            ? formatCurrency(
+                setup.trend.ema21,
+              )
+            : "—"}
+        </p>
+      </div>
+
+      <div className="rounded-xl bg-[#f7f9f7] p-3">
+        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">
+          Risk
+        </p>
+        <p className="mt-1 font-bold">
+          {setup.riskPct.toFixed(1)}%
+        </p>
+      </div>
+
+      <div className="rounded-xl bg-[#f7f9f7] p-3">
+        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">
+          R:R
+        </p>
+        <p className="mt-1 font-bold">
+          {setup.rr.toFixed(1)}:1
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function PullbackDetails({
+  setup,
+}: {
+  setup: EntryClassification;
+}) {
+  const pullback =
+    setup.pullback;
+
+  return (
+    <div className="mt-4 rounded-xl border border-[#e4ebe6] bg-white p-4">
+      <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#7b867f]">
+        Pullback quality
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <p className="text-[10px] text-[#7b867f]">
+            Depth
+          </p>
+          <p className="mt-1 font-bold">
+            {pullback.depthPct.toFixed(1)}%
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[10px] text-[#7b867f]">
+            Volume
+          </p>
+          <p className="mt-1 font-bold">
+            {(pullback.volumeRatio * 100).toFixed(
+              0,
+            )}%
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[10px] text-[#7b867f]">
+            Volatility
+          </p>
+          <p className="mt-1 font-bold">
+            {(pullback.volatilityRatio * 100).toFixed(
+              0,
+            )}%
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[10px] text-[#7b867f]">
+            Higher low
+          </p>
+          <p className="mt-1 font-bold">
+            {pullback.higherLow
+              ? "Preserved"
+              : "Weak"}
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs leading-5 text-[#66716a]">
+        {pullback.evidence.join(
+          " · ",
+        )}
+      </p>
+    </div>
+  );
+}
+
+function FreshSetupCard({
+  symbol,
+  setup,
+}: {
+  symbol: string;
+  setup: EntryClassification;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#e1e8e3] bg-white p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-bold">
+            {symbol}
+          </p>
+
+          <p className="mt-1 text-xs text-[#7b867f]">
+            Score {setup.score}/100 · CMP{" "}
+            {formatCurrency(
+              setup.entry,
+            )}
+          </p>
+        </div>
+
+        <StateBadge
+          state={setup.state}
+        />
+      </div>
+
+      <SetupMetrics setup={setup} />
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-[#f7f9f7] p-3">
+          <p className="text-[10px] uppercase text-[#7b867f]">
+            Structural stop
+          </p>
+          <p className="mt-1 font-bold">
+            {formatCurrency(
+              setup.stop,
+            )}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-[#f7f9f7] p-3">
+          <p className="text-[10px] uppercase text-[#7b867f]">
+            Projected target
+          </p>
+          <p className="mt-1 font-bold">
+            {formatCurrency(
+              setup.target,
+            )}
+          </p>
+        </div>
+      </div>
+
+      <PullbackDetails setup={setup} />
+
+      {setup.pocketPivot && (
+        <div className="mt-3 rounded-xl border border-[#bfe5cf] bg-[#f1fbf5] p-3">
+          <p className="text-xs font-extrabold text-[#087443]">
+            FRESH POCKET PIVOT
+          </p>
+
+          <p className="mt-1 text-xs text-[#47715b]">
+            {setup.pocketPivot.evidence.join(
+              " · ",
+            )}
+          </p>
+        </div>
+      )}
+
+      <p className="mt-3 text-xs leading-5 text-[#66716a]">
+        {setup.evidence.join(
+          " · ",
+        )}
+      </p>
+    </div>
+  );
+}
+
+function ReEntryCard({
+  symbol,
+  setup,
+}: {
+  symbol: string;
+  setup: ReEntryClassification;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#ddd5f1] bg-white p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-bold">
+            {symbol}
+          </p>
+
+          <p className="mt-1 text-xs text-[#7b867f]">
+            Current{" "}
+            {formatCurrency(
+              setup.current,
+            )}
+          </p>
+        </div>
+
+        <StateBadge
+          state={setup.state}
+        />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl bg-[#f7f9f7] p-3">
+          <p className="text-[10px] uppercase text-[#7b867f]">
+            Original entry
+          </p>
+          <p className="mt-1 font-bold">
+            {formatCurrency(
+              setup.entry,
+            )}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-[#f7f9f7] p-3">
+          <p className="text-[10px] uppercase text-[#7b867f]">
+            Stop
+          </p>
+          <p className="mt-1 font-bold">
+            {formatCurrency(
+              setup.stop,
+            )}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-[#f7f9f7] p-3">
+          <p className="text-[10px] uppercase text-[#7b867f]">
+            Target
+          </p>
+          <p className="mt-1 font-bold">
+            {formatCurrency(
+              setup.target,
+            )}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-[#f7f9f7] p-3">
+          <p className="text-[10px] uppercase text-[#7b867f]">
+            R:R
+          </p>
+          <p className="mt-1 font-bold">
+            {setup.rr.toFixed(1)}:1
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl bg-[#f7f9f7] p-4">
+        <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#7b867f]">
+          Re-entry checklist
+        </p>
+
+        <div className="mt-3 space-y-2 text-xs">
+          <p>
+            {setup.trend.healthy
+              ? "✓"
+              : "×"}{" "}
+            Healthy trend
+          </p>
+
+          <p>
+            {setup.pullback.healthy
+              ? "✓"
+              : "×"}{" "}
+            Healthy pullback
+          </p>
+
+          <p>
+            {setup.pullback.higherLow
+              ? "✓"
+              : "×"}{" "}
+            Higher-low preserved
+          </p>
+
+          <p>
+            {setup.pullback.contraction
+              ? "✓"
+              : "×"}{" "}
+            Volume / volatility contraction
+          </p>
+
+          <p>
+            {setup.pocketPivot
+              ? "✓"
+              : "×"}{" "}
+            Fresh Pocket Pivot
+          </p>
+
+          <p>
+            {setup.rr >= 2
+              ? "✓"
+              : "×"}{" "}
+            R:R ≥ 2:1
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs leading-5 text-[#66716a]">
+        {setup.evidence.join(
+          " · ",
+        )}
+      </p>
+    </div>
+  );
+}
+
+export default function ResearchPage() {
+  const {
+    trades,
+  } = useTrades();
+
+  const symbols =
+    useMemo(
+      () =>
+        [
+          ...new Set(
+            trades
+              .map((t) =>
+                t.name
+                  .trim()
+                  .toUpperCase(),
+              )
+              .filter(Boolean),
+          ),
+        ],
+      [trades],
+    );
+
+  const [
+    symbol,
+    setSymbol,
+  ] = useState("");
+
+  const [
+    price,
+    setPrice,
+  ] = useState<
+    number | null
+  >(null);
+
+  const [
+    previous,
+    setPrevious,
+  ] = useState<
+    number | null
+  >(null);
+
+  const [
+    status,
+    setStatus,
+  ] = useState(
+    "Select a symbol to begin research.",
   );
 
-  const [symbol, setSymbol] =
-    useState("");
+  const [
+    aiText,
+    setAiText,
+  ] = useState("");
 
-  const [price, setPrice] =
-    useState<number | null>(null);
+  const [
+    aiLoading,
+    setAiLoading,
+  ] = useState(false);
 
-  const [previous, setPrevious] =
-    useState<number | null>(null);
+  const [
+    patterns,
+    setPatterns,
+  ] = useState<
+    PatternCandidate[]
+  >([]);
 
-  const [status, setStatus] =
-    useState(
-      "Select a symbol to begin research.",
-    );
-
-  const [aiText, setAiText] =
-    useState("");
-
-  const [aiLoading, setAiLoading] =
-    useState(false);
-
-  const [patterns, setPatterns] =
-    useState<PatternCandidate[]>(
-      [],
-    );
-
-  /*
-   * IMPORTANT:
-   *
-   * PriceTick is a 7-element tuple:
-   *
-   * [dateTime, open, high, low, close, volume, dayVolume]
-   *
-   * Do not use string[][] here.
-   */
   const [
     marketSeries,
     setMarketSeries,
@@ -113,16 +503,30 @@ export default function ResearchPage() {
     }[]
   >([]);
 
-  const [themes, setThemes] =
-    useState<ThemeSummary[]>([]);
+  const [
+    themes,
+    setThemes,
+  ] = useState<
+    ThemeSummary[]
+  >([]);
 
-  const [marketStatus, setMarketStatus] =
-    useState(
-      "Loading candle history…",
-    );
+  const [
+    marketStatus,
+    setMarketStatus,
+  ] = useState(
+    "Loading candle history…",
+  );
 
+  /*
+   * Load market history for all symbols
+   * represented in the journal.
+   */
   useEffect(() => {
-    if (!symbols.length) return;
+    if (!symbols.length) {
+      setMarketSeries([]);
+      setPatterns([]);
+      return;
+    }
 
     fetch(
       `/api/research/market?symbols=${encodeURIComponent(
@@ -137,10 +541,6 @@ export default function ResearchPage() {
           data.patterns ?? [],
         );
 
-        /*
-         * The API response is expected to
-         * contain PriceTick-compatible data.
-         */
         setMarketSeries(
           data.series ?? [],
         );
@@ -164,40 +564,44 @@ export default function ResearchPage() {
       );
   }, [symbols]);
 
-  const myThemes = useMemo(
-    () =>
-      [
-        ...new Set(
-          trades
-            .map((trade) =>
-              trade.name
-                .trim()
-                .toUpperCase(),
-            )
-            .filter(Boolean),
-        ),
-      ]
-        .map(
-          (item) =>
-            themes.find(
-              (theme) =>
-                theme.symbols.includes(
-                  item,
-                ),
-            )?.theme ??
-            "Unclassified",
-        )
-        .filter(
-          (
-            item,
-            index,
-            all,
-          ) =>
-            all.indexOf(item) ===
-            index,
-        ),
-    [themes, trades],
-  );
+  /*
+   * Theme context.
+   */
+  const myThemes =
+    useMemo(
+      () =>
+        [
+          ...new Set(
+            trades
+              .map((trade) =>
+                trade.name
+                  .trim()
+                  .toUpperCase(),
+              )
+              .filter(Boolean),
+          ),
+        ]
+          .map(
+            (item) =>
+              themes.find(
+                (theme) =>
+                  theme.symbols.includes(
+                    item,
+                  ),
+              )?.theme ??
+              "Unclassified",
+          )
+          .filter(
+            (
+              item,
+              index,
+              all,
+            ) =>
+              all.indexOf(item) ===
+              index,
+          ),
+      [themes, trades],
+    );
 
   const selectedTrade =
     trades.find(
@@ -212,13 +616,16 @@ export default function ResearchPage() {
     price !== null &&
     previous !== null &&
     previous !== 0
-      ? ((price - previous) /
+      ? ((price -
+          previous) /
           previous) *
         100
       : null;
 
   const signal =
-    momentumSignal(change);
+    momentumSignal(
+      change,
+    );
 
   const metrics =
     calculateTradeMetrics(
@@ -232,184 +639,149 @@ export default function ResearchPage() {
 
   /*
    * ============================================================
-   * RE-ENTRY MONITOR
+   * FRESH SETUP RADAR
    * ============================================================
    *
-   * Signals:
-   *   1. Pocket Pivot
-   *   2. Tight 3-day range
-   *   3. Near MA20
+   * This is completely independent of open trades.
    *
-   * Pocket Pivot is an additional signal only.
-   * It does NOT alter VCP or Darvas detection.
+   * Every symbol gets evaluated through:
+   *
+   * Trend
+   * EMA10/EMA21
+   * Pullback
+   * Contraction
+   * Structure
+   * Pocket Pivot
+   * R:R
+   */
+  const freshSetupRadar =
+    useMemo(
+      () =>
+        marketSeries
+          .map((market) => {
+            const setup =
+              classifyEntrySetup(
+                market.ticks,
+              );
+
+            return {
+              symbol:
+                market.symbol,
+              setup,
+            };
+          })
+          .filter(
+            (
+              item,
+            ): item is {
+              symbol: string;
+              setup: EntryClassification;
+            } =>
+              item.setup !== null,
+          )
+          .sort(
+            (a, b) =>
+              b.setup.score -
+              a.setup.score,
+          ),
+      [marketSeries],
+    );
+
+  /*
+   * ============================================================
+   * OPEN TRADE / RE-ENTRY MONITOR
+   * ============================================================
+   *
+   * Only existing/open trades enter this engine.
+   *
+   * No standalone historical Pocket Pivot.
+   * No MA20-only re-entry.
+   * No tight-range-only re-entry.
    */
   const reentryCandidates =
-    metrics
-      .filter(
-        (trade) =>
-          trade.positionStatus !==
-            "Closed" &&
-          trade.sl > 0,
-      )
-      .map((trade) => {
-        const market =
-          marketSeries.find(
-            (item) =>
-              item.symbol ===
+    useMemo(
+      () =>
+        metrics
+          .filter(
+            (trade) =>
+              trade.positionStatus !==
+                "Closed" &&
+              trade.sl > 0,
+          )
+          .map((trade) => {
+            const tradeSymbol =
               trade.name
                 .trim()
-                .toUpperCase(),
-          );
+                .toUpperCase();
 
-        const ticksForSymbol: PriceTick[] =
-          market?.ticks ?? [];
+            const market =
+              marketSeries.find(
+                (item) =>
+                  item.symbol ===
+                  tradeSymbol,
+              );
 
-        const closes =
-          ticksForSymbol
-            .map((tick) =>
-              Number(tick[4]),
-            )
-            .filter(
-              Number.isFinite,
-            );
+            if (!market) {
+              return null;
+            }
 
-        const highs =
-          ticksForSymbol
-            .map((tick) =>
-              Number(tick[2]),
-            )
-            .filter(
-              Number.isFinite,
-            );
+            const setup =
+              classifyReEntry(
+                market.ticks,
+                trade.entry,
+                trade.sl,
+              );
 
-        const lows =
-          ticksForSymbol
-            .map((tick) =>
-              Number(tick[3]),
-            )
-            .filter(
-              Number.isFinite,
-            );
+            if (!setup) {
+              return null;
+            }
 
-        const current =
-          closes.at(-1) ??
-          trade.cmp;
+            /*
+             * Only display a genuine re-entry
+             * watch / entry.
+             *
+             * Do not fill the section with
+             * ordinary healthy stocks.
+             */
+            if (
+              setup.state !==
+                "RE-ENTRY WATCH" &&
+              setup.state !==
+                "ENTRY"
+            ) {
+              return null;
+            }
 
-        const ma20 =
-          closes
-            .slice(-20)
-            .reduce(
-              (
-                sum,
-                value,
-              ) =>
-                sum + value,
-              0,
-            ) /
-          Math.max(
-            1,
-            Math.min(
-              20,
-              closes.length,
-            ),
-          );
+            return {
+              trade,
+              symbol:
+                tradeSymbol,
+              setup,
+            };
+          })
+          .filter(
+            (
+              item,
+            ): item is {
+              trade: (typeof metrics)[number];
+              symbol: string;
+              setup: ReEntryClassification;
+            } =>
+              item !== null,
+          )
+          .sort(
+            (a, b) =>
+              b.setup.rr -
+              a.setup.rr,
+          ),
+      [metrics, marketSeries],
+    );
 
-        const distance =
-          ma20
-            ? (Math.abs(
-                current - ma20,
-              ) /
-                ma20) *
-              100
-            : 999;
-
-        const nearMa20 =
-          distance <= 6;
-
-        const recentHighs =
-          highs.slice(-3);
-
-        const recentLows =
-          lows.slice(-3);
-
-        const rangePct =
-          recentHighs.length ===
-            3 &&
-          recentLows.length ===
-            3 &&
-          current > 0
-            ? ((Math.max(
-                ...recentHighs,
-              ) -
-                Math.min(
-                  ...recentLows,
-                )) /
-                current) *
-              100
-            : 999;
-
-        const tightRange =
-          rangePct <= 3;
-
-        /*
-         * Pocket Pivot is evaluated independently.
-         */
-        const pocketPivot =
-          detectPocketPivot(
-            ticksForSymbol,
-          );
-
-        let reason:
-          | "pocket"
-          | "tight"
-          | "ma20"
-          | null = null;
-
-        if (pocketPivot) {
-          reason = "pocket";
-        } else if (
-          tightRange
-        ) {
-          reason = "tight";
-        } else if (
-          nearMa20
-        ) {
-          reason = "ma20";
-        }
-
-        /*
-         * Do not average down.
-         *
-         * Re-entry requires price to be:
-         *   - above original SL
-         *   - above original entry
-         */
-        const eligible =
-          reason !== null &&
-          current > trade.sl &&
-          current > trade.entry;
-
-        return {
-          trade,
-          current,
-          ma20,
-          distance,
-          rangePct,
-          reason,
-          pocketPivot,
-          eligible,
-        };
-      })
-      .filter(
-        (candidate) =>
-          candidate.eligible,
-      )
-      .sort(
-        (a, b) =>
-          a.distance -
-          b.distance,
-      );
-
+  /*
+   * ============================================================
+   * REFRESH LIVE QUOTE
+   * ============================================================
+   */
   async function refresh() {
     if (!symbol) return;
 
@@ -426,7 +798,8 @@ export default function ResearchPage() {
       setPrevious(price);
 
       setPrice(
-        result[symbol] ?? null,
+        result[symbol] ??
+          null,
       );
 
       setStatus(
@@ -441,6 +814,11 @@ export default function ResearchPage() {
     }
   }
 
+  /*
+   * ============================================================
+   * AI RESEARCH
+   * ============================================================
+   */
   async function askAI(
     mode:
       | "analysis"
@@ -495,6 +873,32 @@ export default function ResearchPage() {
     }
   }
 
+  /*
+   * Selected-symbol setup.
+   */
+  const selectedSetup =
+    useMemo(() => {
+      if (!symbol) {
+        return null;
+      }
+
+      const market =
+        marketSeries.find(
+          (item) =>
+            item.symbol ===
+            symbol,
+        );
+
+      return market
+        ? classifyEntrySetup(
+            market.ticks,
+          )
+        : null;
+    }, [
+      symbol,
+      marketSeries,
+    ]);
+
   return (
     <main className="min-h-screen bg-[#f7f9f7] pb-28 text-[#202923]">
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
@@ -508,9 +912,11 @@ export default function ResearchPage() {
               Context before conviction
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#66716a]">
-              Review price behavior and momentum, then ask for a cautious research brief. Signals are
-              informational, not predictions or financial advice.
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#66716a]">
+              Trend → pullback → confirmation.
+              Fresh setups and open-trade
+              re-entries are evaluated by
+              separate engines.
             </p>
           </div>
 
@@ -551,136 +957,171 @@ export default function ResearchPage() {
           </div>
         </header>
 
-        {missingSL.length > 0 && (
+        {missingSL.length >
+          0 && (
           <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#f0c7a9] bg-[#fff8f1] p-4 text-[#8c4e18]">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
 
             <div>
               <p className="font-bold">
-                {missingSL.length} active trade
-                {missingSL.length === 1
+                {
+                  missingSL.length
+                }{" "}
+                active trade
+                {missingSL.length ===
+                1
                   ? ""
-                  : "s"} missing a stop loss
+                  : "s"}{" "}
+                missing a stop loss
               </p>
 
               <p className="mt-1 text-sm">
-                Risk percentages exclude these positions until an SL is recorded:{" "}
+                Risk percentages
+                exclude these
+                positions until an
+                SL is recorded:{" "}
                 {missingSL
                   .map(
                     (t) =>
                       `#${t.tradeNo} ${t.name}`,
                   )
-                  .join(", ")}
+                  .join(
+                    ", ",
+                  )}
                 .
               </p>
             </div>
           </div>
         )}
 
-        {reentryCandidates.length >
-          0 && (
-            <section className="mt-6 rounded-2xl border border-[#cfe0d5] bg-white p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#11885c]">
-                    Open trade monitor
-                  </p>
+        {/* =====================================================
+            FRESH SETUP RADAR
+        ====================================================== */}
 
-                  <h2 className="mt-1 text-xl font-bold">
-                    Potential re-entry zones
-                  </h2>
-                </div>
+        <section className="mt-6 rounded-2xl border border-[#cfe0d5] bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#11885c]">
+                Fresh Setup Radar
+              </p>
 
-                <p className="text-xs text-[#7b867f]">
-                  Decision support, not a buy signal
+              <h2 className="mt-1 text-xl font-bold">
+                New entry lifecycle
+              </h2>
+
+              <p className="mt-1 text-xs text-[#7b867f]">
+                No existing position required.
+                Every setup is evaluated from
+                trend through risk/reward.
+              </p>
+            </div>
+
+            <p className="text-xs text-[#7b867f]">
+              {
+                freshSetupRadar.length
+              }{" "}
+              setups
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            {freshSetupRadar.length ? (
+              freshSetupRadar.map(
+                ({
+                  symbol,
+                  setup,
+                }) => (
+                  <FreshSetupCard
+                    key={symbol}
+                    symbol={symbol}
+                    setup={setup}
+                  />
+                ),
+              )
+            ) : (
+              <p className="text-sm text-[#66716a]">
+                No complete fresh setup
+                is currently available.
+              </p>
+            )}
+          </div>
+
+          <p className="mt-4 text-xs text-[#7b867f]">
+            ENTRY requires a healthy trend,
+            healthy pullback, fresh
+            confirmation and acceptable
+            R:R. These are heuristic
+            decision-support states, not
+            trade recommendations.
+          </p>
+        </section>
+
+        {/* =====================================================
+            OPEN TRADE / RE-ENTRY MONITOR
+        ====================================================== */}
+
+        <section className="mt-4 rounded-2xl border border-[#ddd5f1] bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6049a4]">
+                Open Trade / Re-entry Monitor
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold">
+                Separate re-entry engine
+              </h2>
+
+              <p className="mt-1 text-xs text-[#7b867f]">
+                Only active positions are
+                evaluated. Historical Pocket
+                Pivots cannot create a current
+                re-entry.
+              </p>
+            </div>
+
+            <p className="text-xs text-[#7b867f]">
+              {
+                reentryCandidates.length
+              }{" "}
+              candidates
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            {reentryCandidates.length ? (
+              reentryCandidates.map(
+                ({
+                  trade,
+                  symbol,
+                  setup,
+                }) => (
+                  <ReEntryCard
+                    key={`${trade.id}-${symbol}`}
+                    symbol={symbol}
+                    setup={setup}
+                  />
+                ),
+              )
+            ) : (
+              <div className="rounded-xl bg-[#f7f9f7] p-4">
+                <p className="text-sm font-semibold">
+                  No active re-entry setup.
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-[#7b867f]">
+                  The engine will wait for a
+                  proper pullback, preserved
+                  structure, confirmation and
+                  acceptable R:R.
                 </p>
               </div>
+            )}
+          </div>
+        </section>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {reentryCandidates.map(
-                  ({
-                    trade,
-                    current,
-                    ma20,
-                    distance,
-                    rangePct,
-                    reason,
-                    pocketPivot,
-                  }) => (
-                    <div
-                      key={trade.id}
-                      className="rounded-xl bg-[#f7f9f7] p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold">
-                          {trade.name}
-                        </p>
-
-                        <span className="text-xs font-bold text-[#11885c]">
-                          {reason ===
-                          "pocket"
-                            ? `Pocket Pivot${
-                                pocketPivot
-                                  ? ` · ${pocketPivot.volumeRatio.toFixed(
-                                      1,
-                                    )}x volume`
-                                  : ""
-                              }`
-                            : reason ===
-                                "tight"
-                              ? `Tight ${rangePct.toFixed(
-                                  1,
-                                )}% range (3d)`
-                              : `${distance.toFixed(
-                                  1,
-                                )}% from MA20`}
-                        </span>
-                      </div>
-
-                      <p className="mt-2 text-sm text-[#66716a]">
-                        CMP{" "}
-                        {formatCurrency(
-                          current,
-                        )}{" "}
-                        · MA20{" "}
-                        {formatCurrency(
-                          ma20,
-                        )}{" "}
-                        · invalidation{" "}
-                        {formatCurrency(
-                          trade.sl,
-                        )}
-                      </p>
-
-                      <p className="mt-2 text-xs font-semibold text-[#66716a]">
-                        Risk/share{" "}
-                        {formatCurrency(
-                          Math.abs(
-                            current -
-                              trade.sl,
-                          ),
-                        )}{" "}
-                        · proposed zone{" "}
-                        {formatCurrency(
-                          ma20 * 0.98,
-                        )}
-                        –
-                        {formatCurrency(
-                          ma20 * 1.02,
-                        )}{" "}
-                        · reward/risk requires a target
-                      </p>
-
-                      <p className="mt-2 text-xs text-[#7b867f]">
-                        Consider only after price confirmation, supportive volume, and a defined stop. Respect the
-                        original position risk.
-                      </p>
-                    </div>
-                  ),
-                )}
-              </div>
-            </section>
-          )}
+        {/* =====================================================
+            SELECTED SYMBOL SUMMARY
+        ====================================================== */}
 
         <div className="mt-6 grid gap-4 md:grid-cols-4">
           <section className="rounded-2xl border border-[#e2e9e3] bg-white p-5">
@@ -728,15 +1169,29 @@ export default function ResearchPage() {
 
           <section className="rounded-2xl border border-[#e2e9e3] bg-white p-5">
             <p className="text-xs font-bold uppercase text-[#7b867f]">
-              Sector health
+              Setup state
             </p>
 
-            <p className="mt-3 text-xl font-bold">
-              Unavailable
-            </p>
+            <div className="mt-3">
+              {selectedSetup ? (
+                <StateBadge
+                  state={
+                    selectedSetup.state
+                  }
+                />
+              ) : (
+                <p className="text-xl font-bold">
+                  —
+                </p>
+              )}
+            </div>
 
-            <p className="mt-1 text-xs text-[#7b867f]">
-              Existing API does not provide sector breadth.
+            <p className="mt-2 text-xs text-[#7b867f]">
+              {selectedSetup
+                ? `Score ${selectedSetup.score} · R:R ${selectedSetup.rr.toFixed(
+                    1,
+                  )}:1`
+                : "Select a symbol with available history"}
             </p>
           </section>
 
@@ -769,11 +1224,49 @@ export default function ResearchPage() {
           </section>
         </div>
 
+        {/* =====================================================
+            SELECTED SYMBOL DETAIL
+        ====================================================== */}
+
+        {selectedSetup && (
+          <section className="mt-4 rounded-2xl border border-[#e2e9e3] bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7b867f]">
+                  Selected setup
+                </p>
+
+                <h2 className="mt-1 text-xl font-bold">
+                  {symbol}
+                </h2>
+              </div>
+
+              <StateBadge
+                state={
+                  selectedSetup.state
+                }
+              />
+            </div>
+
+            <SetupMetrics
+              setup={selectedSetup}
+            />
+
+            <PullbackDetails
+              setup={selectedSetup}
+            />
+          </section>
+        )}
+
+        {/* =====================================================
+            PATTERN RADAR
+        ====================================================== */}
+
         <section className="mt-4 rounded-2xl border border-[#e2e9e3] bg-white p-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7b867f]">
-                Pattern radar
+                Pattern Radar
               </p>
 
               <h2 className="mt-1 text-xl font-bold">
@@ -797,18 +1290,13 @@ export default function ResearchPage() {
                         market.symbol,
                     );
 
-                  const windowTicks = market.ticks.slice(-CHART_WINDOW);
-                  
+                  const windowTicks =
+                    market.ticks.slice(
+                      -CHART_WINDOW,
+                    );
 
-                  /*
-                   * IMPORTANT:
-                   *
-                   * Do NOT cast to:
-                   * [string,string,string,string,string,string][]
-                   *
-                   * PriceTick has 7 elements.
-                   */
-                  const typedTicks: PriceTick[] =
+                  const typedTicks:
+                    PriceTick[] =
                     windowTicks;
 
                   const windowHighs =
@@ -870,7 +1358,10 @@ export default function ResearchPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-bold">
-                              {item.symbol} ·{" "}
+                              {
+                                item.symbol
+                              }{" "}
+                              ·{" "}
                               {
                                 item.pattern
                               }
@@ -881,7 +1372,8 @@ export default function ResearchPage() {
                               {
                                 CHART_WINDOW
                               }{" "}
-                              sessions · trigger{" "}
+                              sessions ·
+                              trigger{" "}
                               {item.breakoutLevel
                                 ? formatCurrency(
                                     item.breakoutLevel,
@@ -906,7 +1398,9 @@ export default function ResearchPage() {
                             ceiling={
                               ceiling
                             }
-                            floor={floor}
+                            floor={
+                              floor
+                            }
                             breakout={
                               breakout
                             }
@@ -951,14 +1445,15 @@ export default function ResearchPage() {
                           </p>
 
                           <p className="mt-1 text-xs text-[#7b867f]">
-                            No confirmed VCP or Darvas setup yet · last{" "}
+                            No confirmed VCP
+                            or Darvas setup
+                            yet · last{" "}
                             {
                               CHART_WINDOW
                             }{" "}
                             of{" "}
                             {
-                              market
-                                .ticks
+                              market.ticks
                                 .length
                             }{" "}
                             sessions
@@ -970,22 +1465,25 @@ export default function ResearchPage() {
                         </span>
                       </div>
 
-                      <div className="mt-3 h-64">
-                        <PatternMiniChart
-                          ticks={
-                            typedTicks
-                          }
-                          ceiling={Math.max(
-                            ...windowHighs,
-                          )}
-                          floor={Math.min(
-                            ...windowLows,
-                          )}
-                          breakout={Math.max(
-                            ...windowHighs,
-                          )}
-                        />
-                      </div>
+                      {typedTicks.length >
+                        0 && (
+                        <div className="mt-3 h-64">
+                          <PatternMiniChart
+                            ticks={
+                              typedTicks
+                            }
+                            ceiling={Math.max(
+                              ...windowHighs,
+                            )}
+                            floor={Math.min(
+                              ...windowLows,
+                            )}
+                            breakout={Math.max(
+                              ...windowHighs,
+                            )}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 },
@@ -1000,14 +1498,18 @@ export default function ResearchPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-bold">
-                          {item.symbol} ·{" "}
+                          {
+                            item.symbol
+                          }{" "}
+                          ·{" "}
                           {
                             item.pattern
                           }
                         </p>
 
                         <p className="mt-1 text-xs text-[#7b867f]">
-                          Base formation · 20 sessions · trigger{" "}
+                          Base formation ·
+                          trigger{" "}
                           {item.breakoutLevel
                             ? formatCurrency(
                                 item.breakoutLevel,
@@ -1029,29 +1531,29 @@ export default function ResearchPage() {
                         " · ",
                       )}
                     </p>
-
-                    {item.breakoutLevel && (
-                      <p className="mt-2 text-xs font-semibold">
-                        Potential trigger:{" "}
-                        {formatCurrency(
-                          item.breakoutLevel,
-                        )}
-                      </p>
-                    )}
                   </div>
                 ),
               )
             ) : (
               <p className="text-sm text-[#66716a]">
-                No VCP or Darvas candidates detected in the available history.
+                No VCP or Darvas
+                candidates detected
+                in the available
+                history.
               </p>
             )}
           </div>
 
           <p className="mt-4 text-xs text-[#7b867f]">
-            Candidates are heuristic signals, not confirmed patterns or trade recommendations.
+            VCP and Darvas remain independent
+            pattern detectors. Pocket Pivot does
+            not modify them.
           </p>
         </section>
+
+        {/* =====================================================
+            THEME PULSE
+        ====================================================== */}
 
         <section className="mt-4 rounded-2xl border border-[#e2e9e3] bg-white p-5">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7b867f]">
@@ -1128,15 +1630,22 @@ export default function ResearchPage() {
 
             {!themes.length && (
               <p className="text-sm text-[#66716a]">
-                No theme history available yet.
+                No theme history
+                available yet.
               </p>
             )}
           </div>
 
           <p className="mt-4 text-xs text-[#7b867f]">
-            20-session returns use the existing daily price API and a conservative symbol-to-theme map.
+            20-session returns use the existing
+            daily price API and conservative
+            symbol-to-theme mapping.
           </p>
         </section>
+
+        {/* =====================================================
+            MARKET CONTEXT + AI
+        ====================================================== */}
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
           <section className="rounded-2xl border border-[#e2e9e3] bg-white p-5">
@@ -1162,11 +1671,17 @@ export default function ResearchPage() {
                 </p>
 
                 <p className="mt-2 font-bold">
-                  {change === null
-                    ? "No data"
-                    : change >= 0
-                      ? "Higher"
-                      : "Lower"}
+                  {selectedSetup
+                    ? selectedSetup.trend
+                        .healthy
+                      ? "Healthy"
+                      : "Weak"
+                    : change === null
+                      ? "No data"
+                      : change >=
+                          0
+                        ? "Higher"
+                        : "Lower"}
                 </p>
               </div>
 
@@ -1176,17 +1691,33 @@ export default function ResearchPage() {
                 </p>
 
                 <p className="mt-2 font-bold">
-                  Needs candle history
+                  {selectedSetup
+                    ? `10 ${formatCurrency(
+                        selectedSetup.trend
+                          .ema10 ??
+                          0,
+                      )} · 21 ${formatCurrency(
+                        selectedSetup.trend
+                          .ema21 ??
+                          0,
+                      )}`
+                    : "Needs candle history"}
                 </p>
               </div>
 
               <div className="rounded-xl bg-[#f7f9f7] p-4">
                 <p className="text-xs text-[#7b867f]">
-                  Volume
+                  Pullback
                 </p>
 
                 <p className="mt-2 font-bold">
-                  Needs candle history
+                  {selectedSetup
+                    ? selectedSetup
+                        .pullback
+                        .healthy
+                      ? "Healthy"
+                      : "Not confirmed"
+                    : "Needs candle history"}
                 </p>
               </div>
             </div>
@@ -1202,19 +1733,24 @@ export default function ResearchPage() {
             </div>
 
             <p className="mt-3 text-sm leading-6 text-[#c7d1ca]">
-              AI uses only the visible market inputs and clearly marks missing context.
+              AI uses the visible market
+              inputs. Technical setup states
+              remain deterministic and are not
+              replaced by AI.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2">
               <button
                 onClick={() =>
-                  askAI("analysis")
+                  askAI(
+                    "analysis",
+                  )
                 }
                 disabled={
                   !symbol ||
                   aiLoading
                 }
-                className="rounded-xl bg-[#7de2b3] px-3 py-2 text-sm font-bold text-[#163b2b]"
+                className="rounded-xl bg-[#7de2b3] px-3 py-2 text-sm font-bold text-[#163b2b] disabled:opacity-40"
               >
                 Analyze symbol
               </button>
@@ -1227,7 +1763,7 @@ export default function ResearchPage() {
                   !symbol ||
                   aiLoading
                 }
-                className="rounded-xl border border-[#718079] px-3 py-2 text-sm font-bold"
+                className="rounded-xl border border-[#718079] px-3 py-2 text-sm font-bold disabled:opacity-40"
               >
                 Opportunity view
               </button>
@@ -1235,7 +1771,8 @@ export default function ResearchPage() {
 
             {aiLoading && (
               <p className="mt-4 text-sm text-[#c7d1ca]">
-                Preparing cautious research…
+                Preparing cautious
+                research…
               </p>
             )}
 
