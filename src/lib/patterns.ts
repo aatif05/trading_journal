@@ -1034,20 +1034,33 @@ export function classifyReEntry(
   }
 
   /*
-   * setup.entry is the price suggested by the current
-   * technical setup.
+   * setup.entry is the CURRENT market price/setup price.
    *
    * It is NOT the original trade entry.
    */
   const current = setup.entry;
 
   /*
-   * Never average down.
+   * ============================================================
+   * RE-ENTRY FOUNDATION
+   * ============================================================
    *
-   * A re-entry is only valid when price is above both:
-   * 1. original trade entry
-   * 2. original stop
+   * We never average down.
+   *
+   * A re-entry can only be considered after the stock has already
+   * moved above the original entry and remains above the original
+   * stop.
+   *
+   * IMPORTANT:
+   *
+   * R:R is intentionally NOT used here.
+   *
+   * The original trade has already moved in our favour. The
+   * purpose of this engine is to identify a constructive reset
+   * BEFORE the next move, not to recalculate whether the original
+   * trade still has an attractive R:R.
    */
+
   if (
     current <= originalEntry ||
     current <= originalStop
@@ -1072,6 +1085,10 @@ export function classifyReEntry(
           ? ((setup.target - current) / current) * 100
           : 0,
 
+      /*
+       * R:R is retained as informational data only.
+       * It does NOT determine re-entry eligibility.
+       */
       rr:
         current > originalStop
           ? (setup.target - current) /
@@ -1085,12 +1102,21 @@ export function classifyReEntry(
 
       evidence: [
         ...setup.evidence,
-        "Price is at/below original entry or stop",
-        "Re-entry is invalid",
+        "Price has not moved above the original entry",
+        "Re-entry is invalid until the original entry is reclaimed",
       ],
     };
   }
 
+  /*
+   * ============================================================
+   * TREND BREAKDOWN
+   * ============================================================
+   *
+   * Even though price may still be above the original entry,
+   * we do not want a re-entry when the technical structure has
+   * broken down.
+   */
   if (setup.state === "BREAKDOWN") {
     return {
       state: "BREAKDOWN",
@@ -1131,6 +1157,19 @@ export function classifyReEntry(
     };
   }
 
+  /*
+   * ============================================================
+   * EXTENDED
+   * ============================================================
+   *
+   * We do not want to chase a stock simply because the trend is
+   * healthy.
+   *
+   * If the stock is too far from the EMA structure, wait for it
+   * to reset.
+   *
+   * This is independent of R:R.
+   */
   if (setup.state === "EXTENDED — DON'T CHASE") {
     return {
       state: "EXTENDED — DON'T CHASE",
@@ -1166,13 +1205,25 @@ export function classifyReEntry(
       evidence: [
         ...setup.evidence,
         "Price is extended from the moving-average structure",
-        "Do not chase the re-entry",
+        "Wait for a constructive reset instead of chasing",
       ],
     };
   }
 
-  const risk = current - originalStop;
-  const reward = setup.target - current;
+  /*
+   * ============================================================
+   * CURRENT RE-ENTRY METRICS
+   * ============================================================
+   *
+   * These values remain useful for display and risk context.
+   *
+   * They are NOT used as a filter.
+   */
+  const risk =
+    current - originalStop;
+
+  const reward =
+    setup.target - current;
 
   const rr =
     risk > 0
@@ -1180,21 +1231,103 @@ export function classifyReEntry(
       : 0;
 
   /*
-   * Pocket Pivot must be fresh because
-   * detectPocketPivot() evaluates the latest candle.
+   * ============================================================
+   * RE-ENTRY QUALITY
+   * ============================================================
+   *
+   * The question is now:
+   *
+   * "Has the stock already proven the original trade and is it
+   * giving us a constructive place to watch for the next move?"
+   *
+   * NOT:
+   *
+   * "Does the current price still have 2:1 R:R?"
+   */
+
+  const aboveOriginalEntry =
+    current > originalEntry;
+
+  const healthyTrend =
+    setup.trend.healthy;
+
+  const healthyPullback =
+    setup.pullback.healthy;
+
+  const higherLow =
+    setup.pullback.higherLow;
+
+  const contraction =
+    setup.pullback.contraction;
+
+  const freshPocketPivot =
+    setup.pocketPivot !== null;
+
+  /*
+   * ============================================================
+   * FRESH CONFIRMATION
+   * ============================================================
+   *
+   * A fresh Pocket Pivot is the strongest confirmation.
+   *
+   * R:R intentionally NOT checked.
    */
   const confirmed =
-    setup.pocketPivot !== null &&
-    setup.trend.healthy &&
-    setup.pullback.healthy &&
-    setup.pullback.higherLow &&
-    rr >= 2;
+    aboveOriginalEntry &&
+    healthyTrend &&
+    healthyPullback &&
+    higherLow &&
+    freshPocketPivot;
 
+  /*
+   * ============================================================
+   * STRONG WATCH
+   * ============================================================
+   *
+   * We want the stock on our radar BEFORE confirmation.
+   *
+   * This is deliberately allowed without a Pocket Pivot.
+   *
+   * Contraction + healthy trend + healthy pullback gives us
+   * exactly the "watch before price moves" behaviour we want.
+   *
+   * R:R intentionally NOT checked.
+   */
   const strongWatch =
+    aboveOriginalEntry &&
     setup.trend.strong &&
-    setup.pullback.healthy &&
-    setup.pullback.contraction &&
-    rr >= 2;
+    healthyPullback &&
+    contraction;
+
+  /*
+   * ============================================================
+   * EARLY WATCH
+   * ============================================================
+   *
+   * This catches constructive resets that may not yet have
+   * complete contraction/confirmation.
+   *
+   * Examples:
+   *
+   * - price above original entry
+   * - healthy trend
+   * - healthy pullback
+   * - higher-low preserved
+   * - holding EMA21
+   *
+   * This is the important part of the new philosophy:
+   *
+   * We want the stock visible BEFORE the breakout/confirmation.
+   */
+  const earlyWatch =
+    aboveOriginalEntry &&
+    healthyTrend &&
+    healthyPullback &&
+    (
+      higherLow ||
+      setup.pullback.holdsEma21 ||
+      contraction
+    );
 
   let state:
     | "RE-ENTRY WATCH"
@@ -1204,18 +1337,65 @@ export function classifyReEntry(
 
   if (confirmed) {
     state = "ENTRY";
-  } else if (strongWatch) {
+  } else if (
+    strongWatch ||
+    earlyWatch
+  ) {
     state = "RE-ENTRY WATCH";
   } else {
+    /*
+     * We keep this as RE-ENTRY WATCH rather than introducing a
+     * new state, because the page is specifically designed to
+     * show candidates from this engine.
+     *
+     * The evidence below tells us why the setup is not yet strong.
+     */
     state = "RE-ENTRY WATCH";
   }
 
+  /*
+   * ============================================================
+   * EVIDENCE
+   * ============================================================
+   *
+   * Notice that we no longer say:
+   *
+   * "Re-entry R:R X:1"
+   *
+   * because that suggests R:R is part of the decision.
+   *
+   * We can still expose the calculated R:R in the returned
+   * object for informational purposes.
+   */
   const evidence = [
     ...setup.evidence,
     "Original entry respected",
     "Original stop respected",
-    `Re-entry R:R ${rr.toFixed(1)}:1`,
   ];
+
+  if (confirmed) {
+    evidence.push(
+      "Fresh Pocket Pivot confirms the re-entry setup",
+    );
+  } else if (strongWatch) {
+    evidence.push(
+      "Healthy pullback with volume/volatility contraction",
+    );
+    evidence.push(
+      "Watching before confirmation",
+    );
+  } else if (earlyWatch) {
+    evidence.push(
+      "Constructive re-entry structure developing",
+    );
+    evidence.push(
+      "Watching for the next confirmation",
+    );
+  } else {
+    evidence.push(
+      "Setup is not yet fully constructive",
+    );
+  }
 
   return {
     state,
@@ -1237,12 +1417,21 @@ export function classifyReEntry(
         ? (reward / current) * 100
         : 0,
 
+    /*
+     * Retained for display/risk context ONLY.
+     *
+     * This value has no influence on state.
+     */
     rr,
 
-    pocketPivot: setup.pocketPivot,
+    pocketPivot:
+      setup.pocketPivot,
 
-    trend: setup.trend,
-    pullback: setup.pullback,
+    trend:
+      setup.trend,
+
+    pullback:
+      setup.pullback,
 
     evidence,
   };
