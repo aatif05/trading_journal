@@ -436,12 +436,7 @@ function ReEntryCard({
             Fresh Pocket Pivot
           </p>
 
-          <p>
-            {setup.rr >= 2
-              ? "✓"
-              : "×"}{" "}
-            R:R ≥ 2:1
-          </p>
+        
         </div>
       </div>
 
@@ -802,11 +797,16 @@ export default function ResearchPage() {
             } =>
               item !== null,
           )
-          .sort(
-            (a, b) =>
-              b.setup.rr -
-              a.setup.rr,
-          ),
+          .sort((a, b) => {
+  const score = (item: ReEntryClassification) =>
+    (item.setup.pocketPivot ? 40 : 0) +
+    (item.setup.trend.strong ? 25 : 0) +
+    (item.setup.pullback.healthy ? 20 : 0) +
+    (item.setup.pullback.contraction ? 10 : 0) +
+    (item.setup.pullback.higherLow ? 5 : 0);
+
+  return score(b) - score(a);
+}),
       [metrics, marketSeries],
     );
 
@@ -1081,10 +1081,10 @@ export default function ResearchPage() {
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-[#7b867f]">
-                  The engine will wait for a
-                  proper pullback, preserved
-                  structure, confirmation and
-                  acceptable R:R.
+                  The engine will wait for price to move above
+the original entry and then look for a healthy
+pullback, preserved structure and constructive
+confirmation.
                 </p>
               </div>
             )}
