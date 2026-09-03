@@ -994,67 +994,6 @@ export default function ResearchPage() {
           </div>
         )}
 
-        {/* =====================================================
-            FRESH SETUP RADAR
-        ====================================================== */}
-
-        <section className="mt-6 rounded-2xl border border-[#cfe0d5] bg-white p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#11885c]">
-                Fresh Setup Radar
-              </p>
-
-              <h2 className="mt-1 text-xl font-bold">
-                New entry lifecycle
-              </h2>
-
-              <p className="mt-1 text-xs text-[#7b867f]">
-                No existing position required.
-                Every setup is evaluated from
-                trend through risk/reward.
-              </p>
-            </div>
-
-            <p className="text-xs text-[#7b867f]">
-              {
-                freshSetupRadar.length
-              }{" "}
-              setups
-            </p>
-          </div>
-
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            {freshSetupRadar.length ? (
-              freshSetupRadar.map(
-                ({
-                  symbol,
-                  setup,
-                }) => (
-                  <FreshSetupCard
-                    key={symbol}
-                    symbol={symbol}
-                    setup={setup}
-                  />
-                ),
-              )
-            ) : (
-              <p className="text-sm text-[#66716a]">
-                No complete fresh setup
-                is currently available.
-              </p>
-            )}
-          </div>
-
-          <p className="mt-4 text-xs text-[#7b867f]">
-            ENTRY requires a healthy trend,
-            healthy pullback, fresh
-            confirmation and acceptable
-            R:R. These are heuristic
-            decision-support states, not
-            trade recommendations.
-          </p>
-        </section>
 
         {/* =====================================================
             OPEN TRADE / RE-ENTRY MONITOR
@@ -1118,6 +1057,71 @@ export default function ResearchPage() {
             )}
           </div>
         </section>
+        
+
+        {/* =====================================================
+            FRESH SETUP RADAR
+        ====================================================== */}
+
+        <section className="mt-6 rounded-2xl border border-[#cfe0d5] bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#11885c]">
+                Fresh Setup Radar
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold">
+                New entry lifecycle
+              </h2>
+
+              <p className="mt-1 text-xs text-[#7b867f]">
+                No existing position required.
+                Every setup is evaluated from
+                trend through risk/reward.
+              </p>
+            </div>
+
+            <p className="text-xs text-[#7b867f]">
+              {
+                freshSetupRadar.length
+              }{" "}
+              setups
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            {freshSetupRadar.length ? (
+              freshSetupRadar.map(
+                ({
+                  symbol,
+                  setup,
+                }) => (
+                  <FreshSetupCard
+                    key={symbol}
+                    symbol={symbol}
+                    setup={setup}
+                  />
+                ),
+              )
+            ) : (
+              <p className="text-sm text-[#66716a]">
+                No complete fresh setup
+                is currently available.
+              </p>
+            )}
+          </div>
+
+          <p className="mt-4 text-xs text-[#7b867f]">
+            ENTRY requires a healthy trend,
+            healthy pullback, fresh
+            confirmation and acceptable
+            R:R. These are heuristic
+            decision-support states, not
+            trade recommendations.
+          </p>
+        </section>
+
+        
 
         {/* =====================================================
             SELECTED SYMBOL SUMMARY
