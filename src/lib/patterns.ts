@@ -998,8 +998,15 @@ export type ReEntryClassification = {
     | "BREAKDOWN"
     | "EXTENDED — DON'T CHASE";
 
+  /** The actual original entry from the journal trade. */
+  originalEntry: number;
+
+  /** The price at which a new/re-entry would be considered. */
+  reEntry: number;
+
+  /** Current market/setup price. */
   current: number;
-  entry: number;
+
   stop: number;
   target: number;
 
@@ -1020,158 +1027,152 @@ export function classifyReEntry(
   originalEntry: number,
   originalStop: number,
 ): ReEntryClassification | null {
-  const setup =
-    classifyEntrySetup(ticks);
+  const setup = classifyEntrySetup(ticks);
 
   if (!setup) {
     return null;
   }
 
-  const current =
-    setup.entry;
+  /*
+   * setup.entry is the price suggested by the current
+   * technical setup.
+   *
+   * It is NOT the original trade entry.
+   */
+  const current = setup.entry;
 
   /*
    * Never average down.
+   *
+   * A re-entry is only valid when price is above both:
+   * 1. original trade entry
+   * 2. original stop
    */
   if (
-  current <= originalEntry ||
-  current <= originalStop
-) {
-  return {
-    state: "BREAKDOWN",
-    current,
-    entry: current,
-    stop: originalStop,
-    target: setup.target,
+    current <= originalEntry ||
+    current <= originalStop
+  ) {
+    return {
+      state: "BREAKDOWN",
 
-    riskPct:
-      current > 0
-        ? ((current - originalStop) / current) * 100
-        : 999,
+      originalEntry,
+      reEntry: current,
+      current,
 
-    rewardPct:
-      current > 0
-        ? ((setup.target - current) / current) * 100
-        : 0,
+      stop: originalStop,
+      target: setup.target,
 
-    rr:
-      current > originalStop
-        ? (setup.target - current) /
-          (current - originalStop)
-        : 0,
+      riskPct:
+        current > 0
+          ? ((current - originalStop) / current) * 100
+          : 999,
 
-    pocketPivot:
-      setup.pocketPivot,
+      rewardPct:
+        current > 0
+          ? ((setup.target - current) / current) * 100
+          : 0,
 
-    trend:
-      setup.trend,
+      rr:
+        current > originalStop
+          ? (setup.target - current) /
+            (current - originalStop)
+          : 0,
 
-    pullback:
-      setup.pullback,
+      pocketPivot: setup.pocketPivot,
 
-    evidence: [
-      ...setup.evidence,
-      "Price is at/below original entry or stop",
-      "Re-entry is invalid",
-    ],
-  };
-}
+      trend: setup.trend,
+      pullback: setup.pullback,
 
-if (
-  setup.state ===
-  "BREAKDOWN"
-) {
-  return {
-    state: "BREAKDOWN",
-    current,
-    entry: current,
-    stop: originalStop,
-    target: setup.target,
+      evidence: [
+        ...setup.evidence,
+        "Price is at/below original entry or stop",
+        "Re-entry is invalid",
+      ],
+    };
+  }
 
-    riskPct:
-      current > 0
-        ? ((current - originalStop) / current) * 100
-        : 999,
+  if (setup.state === "BREAKDOWN") {
+    return {
+      state: "BREAKDOWN",
 
-    rewardPct:
-      current > 0
-        ? ((setup.target - current) / current) * 100
-        : 0,
+      originalEntry,
+      reEntry: current,
+      current,
 
-    rr:
-      current > originalStop
-        ? (setup.target - current) /
-          (current - originalStop)
-        : 0,
+      stop: originalStop,
+      target: setup.target,
 
-    pocketPivot:
-      setup.pocketPivot,
+      riskPct:
+        current > 0
+          ? ((current - originalStop) / current) * 100
+          : 999,
 
-    trend:
-      setup.trend,
+      rewardPct:
+        current > 0
+          ? ((setup.target - current) / current) * 100
+          : 0,
 
-    pullback:
-      setup.pullback,
+      rr:
+        current > originalStop
+          ? (setup.target - current) /
+            (current - originalStop)
+          : 0,
 
-    evidence: [
-      ...setup.evidence,
-      "Trend breakdown detected",
-      "Re-entry disabled",
-    ],
-  };
-}
+      pocketPivot: setup.pocketPivot,
 
-if (
-  setup.state ===
-  "EXTENDED — DON'T CHASE"
-) {
-  return {
-    state:
-      "EXTENDED — DON'T CHASE",
+      trend: setup.trend,
+      pullback: setup.pullback,
 
-    current,
-    entry: current,
-    stop: originalStop,
-    target: setup.target,
+      evidence: [
+        ...setup.evidence,
+        "Trend breakdown detected",
+        "Re-entry disabled",
+      ],
+    };
+  }
 
-    riskPct:
-      current > 0
-        ? ((current - originalStop) / current) * 100
-        : 999,
+  if (setup.state === "EXTENDED — DON'T CHASE") {
+    return {
+      state: "EXTENDED — DON'T CHASE",
 
-    rewardPct:
-      current > 0
-        ? ((setup.target - current) / current) * 100
-        : 0,
+      originalEntry,
+      reEntry: current,
+      current,
 
-    rr:
-      current > originalStop
-        ? (setup.target - current) /
-          (current - originalStop)
-        : 0,
+      stop: originalStop,
+      target: setup.target,
 
-    pocketPivot:
-      setup.pocketPivot,
+      riskPct:
+        current > 0
+          ? ((current - originalStop) / current) * 100
+          : 999,
 
-    trend:
-      setup.trend,
+      rewardPct:
+        current > 0
+          ? ((setup.target - current) / current) * 100
+          : 0,
 
-    pullback:
-      setup.pullback,
+      rr:
+        current > originalStop
+          ? (setup.target - current) /
+            (current - originalStop)
+          : 0,
 
-    evidence: [
-      ...setup.evidence,
-      "Price is extended from the moving-average structure",
-      "Do not chase the re-entry",
-    ],
-  };
-}
+      pocketPivot: setup.pocketPivot,
 
-  const risk =
-    current - originalStop;
+      trend: setup.trend,
+      pullback: setup.pullback,
 
-  const reward =
-    setup.target - current;
+      evidence: [
+        ...setup.evidence,
+        "Price is extended from the moving-average structure",
+        "Do not chase the re-entry",
+      ],
+    };
+  }
+
+  const risk = current - originalStop;
+  const reward = setup.target - current;
 
   const rr =
     risk > 0
@@ -1179,11 +1180,8 @@ if (
       : 0;
 
   /*
-   * Re-entry confirmation.
-   *
    * Pocket Pivot must be fresh because
-   * detectPocketPivot only evaluates the
-   * latest candle.
+   * detectPocketPivot() evaluates the latest candle.
    */
   const confirmed =
     setup.pocketPivot !== null &&
@@ -1221,25 +1219,31 @@ if (
 
   return {
     state,
+
+    originalEntry,
+    reEntry: current,
     current,
-    entry: current,
+
     stop: originalStop,
     target: setup.target,
+
     riskPct:
       current > 0
         ? (risk / current) * 100
         : 999,
+
     rewardPct:
       current > 0
         ? (reward / current) * 100
         : 0,
+
     rr,
-    pocketPivot:
-      setup.pocketPivot,
-    trend:
-      setup.trend,
-    pullback:
-      setup.pullback,
+
+    pocketPivot: setup.pocketPivot,
+
+    trend: setup.trend,
+    pullback: setup.pullback,
+
     evidence,
   };
 }
