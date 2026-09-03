@@ -314,9 +314,7 @@ function ReEntryCard({
 
           <p className="mt-1 text-xs text-[#7b867f]">
             Current{" "}
-            {formatCurrency(
-              setup.current,
-            )}
+            {formatCurrency(setup.current)}
           </p>
         </div>
 
@@ -330,9 +328,22 @@ function ReEntryCard({
           <p className="text-[10px] uppercase text-[#7b867f]">
             Original entry
           </p>
+
           <p className="mt-1 font-bold">
             {formatCurrency(
-              setup.entry,
+              setup.originalEntry,
+            )}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-[#f7f9f7] p-3">
+          <p className="text-[10px] uppercase text-[#7b867f]">
+            Re-entry
+          </p>
+
+          <p className="mt-1 font-bold">
+            {formatCurrency(
+              setup.reEntry,
             )}
           </p>
         </div>
@@ -341,6 +352,7 @@ function ReEntryCard({
           <p className="text-[10px] uppercase text-[#7b867f]">
             Stop
           </p>
+
           <p className="mt-1 font-bold">
             {formatCurrency(
               setup.stop,
@@ -352,10 +364,23 @@ function ReEntryCard({
           <p className="text-[10px] uppercase text-[#7b867f]">
             Target
           </p>
+
           <p className="mt-1 font-bold">
             {formatCurrency(
               setup.target,
             )}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-[#f7f9f7] p-3">
+          <p className="text-[10px] uppercase text-[#7b867f]">
+            Risk
+          </p>
+
+          <p className="mt-1 font-bold">
+            {setup.riskPct.toFixed(1)}%
           </p>
         </div>
 
@@ -363,6 +388,7 @@ function ReEntryCard({
           <p className="text-[10px] uppercase text-[#7b867f]">
             R:R
           </p>
+
           <p className="mt-1 font-bold">
             {setup.rr.toFixed(1)}:1
           </p>
@@ -604,13 +630,20 @@ export default function ResearchPage() {
     );
 
   const selectedTrade =
-    trades.find(
+  trades
+    .filter(
       (t) =>
         t.name
           .trim()
           .toUpperCase() ===
-        symbol,
-    );
+        symbol &&
+        t.positionStatus !== "Closed",
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.date).getTime() -
+        new Date(a.date).getTime(),
+    )[0];
 
   const change =
     price !== null &&
