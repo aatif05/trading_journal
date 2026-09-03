@@ -798,7 +798,7 @@ export default function ResearchPage() {
               item !== null,
           )
           .sort((a, b) => {
-  const score = (item: ReEntryClassification) =>
+  const score = (item: typeof a) =>
     (item.setup.pocketPivot ? 40 : 0) +
     (item.setup.trend.strong ? 25 : 0) +
     (item.setup.pullback.healthy ? 20 : 0) +
