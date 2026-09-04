@@ -6,7 +6,6 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { JournalToolbar } from "@/components/journal/journal-toolbar";
 import { KpiGrid } from "@/components/journal/kpi-grid";
 import { RiskWarning } from "@/components/journal/risk-warning";
-import { TradeReview } from "@/components/journal/trade-review";
 import { TradeTable } from "@/components/journal/trade-table";
 import { useCapitalFlows } from "@/hooks/use-capital-flows";
 import { usePriceRefresh } from "@/hooks/use-price-refresh";
@@ -38,7 +37,6 @@ export default function Home() {
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
     () => new Set(tradeColumns.map((column) => column.key)),
   );
-  const [reviewTradeId, setReviewTradeId] = useState<string | null>(null);
 
   const {
     refreshTrade,
@@ -97,7 +95,6 @@ export default function Home() {
     const candidate = existingTrade ? { ...existingTrade, ...patch } : null;
     const wasClosed = existingTrade ? calculateTrade(existingTrade).positionStatus === "Closed" : false;
     const isClosed = candidate ? calculateTrade(candidate).positionStatus === "Closed" : false;
-    if (!wasClosed && isClosed) setReviewTradeId(id);
     const setupFieldChanged = patch.name !== undefined || patch.entry !== undefined || patch.initialQty !== undefined;
     if (candidate?.name.trim() && candidate.entry > 0 && candidate.initialQty > 0 && setupFieldChanged) {
       void refreshTrade(candidate);
@@ -180,8 +177,6 @@ export default function Home() {
         )}
 
         <KpiGrid metrics={metrics} rows={tradeMetrics} />
-        {reviewTradeId && tradeMetrics.filter((metric) => metric.id === reviewTradeId && metric.positionStatus === "Closed").map((metric) => { const trade = trades.find((item) => item.id === reviewTradeId); return trade ? <TradeReview key={trade.id} trade={trade} metric={metric} onDismiss={() => setReviewTradeId(null)} /> : null; })}
-
         <section className="overflow-hidden rounded-2xl border border-[#dbe4dd] bg-white shadow-[0_12px_30px_rgba(19,39,28,0.06)]">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e5ebe7] bg-[#f8faf8] px-4 py-3 text-[10px] font-medium text-[#718078]">
             <span>
