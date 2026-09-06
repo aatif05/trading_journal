@@ -687,6 +687,10 @@ export default function ResearchPage() {
    * Pocket Pivot
    * R:R
    */
+  // Debug: Log what's being filtered
+console.log('Market Series Symbols:', marketSeries.map(m => m.symbol));
+console.log('Open Symbols:', Array.from(openSymbols));
+console.log('After Filter:', marketSeries.filter(m => !openSymbols.has(m.symbol)).map(m => m.symbol));
   const freshSetupRadar =
     useMemo(
       () =>
