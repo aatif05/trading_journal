@@ -475,17 +475,17 @@ export default function ResearchPage() {
     status: t.positionStatus 
   })));
 }, [trades]);
-  // 👇 ADD THIS: Get symbols that currently have an active position
-  const openSymbols = useMemo(() => {
+
+  const metrics = calculateTradeMetrics(trades, new Date(), 0);
+
+const openSymbols = useMemo(() => {
   return new Set(
-    trades
-      .filter((t) => 
-        t.positionStatus === "Open" || t.positionStatus === "Partial"
-      )
-      .map((t) => t.name.trim().toUpperCase())
+    metrics
+      .filter((m) => m.positionStatus === "Open" || m.positionStatus === "Partial")
+      .map((m) => m.name.trim().toUpperCase())
       .filter(Boolean),
   );
-}, [trades]);
+}, [metrics]);
 
   const [
     symbol,
