@@ -167,6 +167,8 @@ export type EntryClassification = {
   rr: number;
 
   pocketPivot: PocketPivot | null;
+   shakeout: ShakeoutReclaim;      // 👈 ADD
+  symmetry: BaseSymmetry;         // 👈 ADD
 
   trend: TrendHealth;
   pullback: PullbackAnalysis;
@@ -708,6 +710,265 @@ export function detectPocketPivot(
 }
 
 /* ============================================================
+ * SHAKEOUT & RECLAIM
+ * ========================================================== */
+
+export type ShakeoutReclaim = {
+  present: boolean;
+  /** Dip low pierced prior swing low (Wyckoff spring). */
+  spring: boolean;
+  /** Reclaim candle closed up on above-average volume. */
+  strongReclaim: boolean;
+  sessionsAgo: number | null;
+  evidence: string[];
+};
+
+/**
+ * Shakeout & reclaim:
+ *
+ * Price closed below the 20 & 50 EMA within the last 20 sessions
+ * (flushing stops / weak hands), then closed back above both
+ * within the last 10 sessions.
+ */
+export function detectShakeoutReclaim(
+  ticks: PriceTick[],
+): ShakeoutReclaim {
+  const empty: ShakeoutReclaim = {
+    present: false,
+    spring: false,
+    strongReclaim: false,
+    sessionsAgo: null,
+    evidence: [],
+  };
+
+  const c = closes(ticks);
+  const v = volumes(ticks);
+  const l = lows(ticks);
+
+  if (c.length < 60) return empty;
+
+  const e20 = emaSeries(c, 20);
+  const e50 = emaSeries(c, 50);
+
+  // emaSeries[k] corresponds to closes[k + period - 1]
+  const e20At = (i: number) => (i >= 19 ? e20[i - 19] ?? null : null);
+  const e50At = (i: number) => (i >= 49 ? e50[i - 49] ?? null : null);
+
+  const last = c.length - 1;
+
+  // Most recent dip below BOTH EMAs within last 20 sessions
+  let dipIndex = -1;
+  for (let i = last; i >= last - 20; i--) {
+    const a = e20At(i);
+    const b = e50At(i);
+    if (a !== null && b !== null && c[i] < a && c[i] < b) {
+      dipIndex = i;
+      break;
+    }
+  }
+  if (dipIndex === -1) return empty;
+
+  // Reclaim above BOTH EMAs after the dip
+  let reclaimIndex = -1;
+  for (let i = dipIndex + 1; i <= last; i++) {
+    const a = e20At(i);
+    const b = e50At(i);
+    if (a !== null && b !== null && c[i] > a && c[i] > b) {
+      reclaimIndex = i;
+      break;
+    }
+  }
+  if (reclaimIndex === -1) return empty;
+
+  const sessionsAgo = last - reclaimIndex;
+  if (sessionsAgo > 10) return empty;
+
+  // Spring: dip low pierced the prior swing low
+  const priorLows = l.slice(Math.max(0, dipIndex - 20), dipIndex);
+  const spring =
+    priorLows.length > 0 ? l[dipIndex] < Math.min(...priorLows) : false;
+
+  // Strong reclaim: up-close on expanding volume
+  const priorVol = avg(v.slice(Math.max(0, reclaimIndex - 20), reclaimIndex));
+  const strongReclaim =
+    priorVol > 0 &&
+    c[reclaimIndex] > c[reclaimIndex - 1] &&
+    v[reclaimIndex] > priorVol * 1.2;
+
+  const evidence: string[] = [];
+  evidence.push(
+    `Shakeout below 20/50 EMA ${last - dipIndex} sessions ago, reclaimed ${sessionsAgo} sessions ago`,
+  );
+  if (spring) evidence.push("Dip pierced prior swing low (spring)");
+  if (strongReclaim) evidence.push("Reclaim closed up on expanding volume");
+
+  return { present: true, spring, strongReclaim, sessionsAgo, evidence };
+}
+
+/* ============================================================
+ * BASE SYMMETRY (RIGHT SIDE)
+ * ========================================================== */
+
+export type BaseSymmetry = {
+  present: boolean;
+  baseTop: number;
+  baseLow: number;
+  /** 0 = at base low, 100 = at base top. */
+  positionPct: number;
+  rightSideQuieter: boolean;
+  timeSymmetry: boolean;
+  evidence: string[];
+};
+
+/**
+ * Right side of the base:
+ *
+ * The base top → base low decline already happened, and price is now
+ * recovering in the UPPER HALF of the base range without having broken
+ * out yet. A quiet, time-symmetric right side = constructive base.
+ */
+export function detectBaseSymmetry(
+  ticks: PriceTick[],
+): BaseSymmetry {
+  const empty: BaseSymmetry = {
+    present: false,
+    baseTop: 0,
+    baseLow: 0,
+    positionPct: 0,
+    rightSideQuieter: false,
+    timeSymmetry: false,
+    evidence: [],
+  };
+
+  const c = closes(ticks);
+  const h = highs(ticks);
+  const l = lows(ticks);
+  const v = volumes(ticks);
+
+  if (c.length < 60) return empty;
+
+  const start = c.length - 60;
+  const hh = h.slice(start);
+  const ll = l.slice(start);
+  const cc = c.slice(start);
+  const vv = v.slice(start);
+
+  const topLocal = hh.indexOf(Math.max(...hh));
+  if (topLocal >= ll.length - 10) return empty; // top too recent, no right side yet
+
+  const afterTop = ll.slice(topLocal);
+  const lowLocal = topLocal + afterTop.indexOf(Math.min(...afterTop));
+
+  const baseTop = hh[topLocal];
+  const baseLow = ll[lowLocal];
+  const range = baseTop - baseLow;
+  if (range <= 0 || baseTop <= 0) return empty;
+
+  const current = cc[cc.length - 1];
+  const positionPct = ((current - baseLow) / range) * 100;
+
+  // Right side forming: upper half of range, not yet broken out
+  if (positionPct < 50 || current >= baseTop) return empty;
+
+  const declineLen = lowLocal - topLocal;
+  const rightLen = cc.length - 1 - lowLocal;
+  if (rightLen < 3) return empty;
+
+  const leftVol = avg(vv.slice(topLocal, lowLocal + 1));
+  const rightVol = avg(vv.slice(lowLocal));
+  const rightSideQuieter = leftVol > 0 && rightVol < leftVol;
+
+  // Recovery taking its time (no V-spike)
+  const timeSymmetry = rightLen >= declineLen * 0.5;
+
+  const evidence: string[] = [];
+  evidence.push(
+    `Right side of base forming (price at ${positionPct.toFixed(0)}% of base range)`,
+  );
+  if (rightSideQuieter) evidence.push("Right side volume quieter than left side");
+  if (timeSymmetry) evidence.push("Time symmetry developing (no V-spike)");
+
+  return {
+    present: true,
+    baseTop,
+    baseLow,
+    positionPct,
+    rightSideQuieter,
+    timeSymmetry,
+    evidence,
+  };
+}
+
+/* ============================================================
+ * BUY ZONE / HANDLE (TIMING)
+ * ========================================================== */
+
+export type BuyZone = {
+  present: boolean;
+  nearPivot: boolean;
+  handle: boolean;
+  handleDepthPct: number;
+  evidence: string[];
+};
+
+/**
+ * Timing layer:
+ *
+ * nearPivot: price within 5% below the base top / pivot → actionable now.
+ * handle:    last ~7 sessions drifting ≤8% lower on dry volume.
+ */
+export function detectBuyZone(
+  ticks: PriceTick[],
+  baseTop?: number,
+): BuyZone {
+  const empty: BuyZone = {
+    present: false,
+    nearPivot: false,
+    handle: false,
+    handleDepthPct: 0,
+    evidence: [],
+  };
+
+  const c = closes(ticks);
+  const v = volumes(ticks);
+
+  if (c.length < 40) return empty;
+
+  const current = c[c.length - 1];
+  const pivot =
+    baseTop && baseTop > current ? baseTop : recentHigh(c, 20) ?? current;
+
+  const nearPivot = pivot > 0 && current <= pivot && current >= pivot * 0.95;
+
+  const handleWindow = c.slice(-7);
+  const handleHigh = Math.max(...handleWindow);
+  const handleDepthPct =
+    handleHigh > 0 ? ((handleHigh - current) / handleHigh) * 100 : 0;
+
+  const driftDown = current <= handleHigh && current >= handleHigh * 0.92;
+
+  const handleVol = avg(v.slice(-7));
+  const baseVol = avg(v.slice(-40, -7));
+  const quietHandle = baseVol > 0 && handleVol < baseVol * 0.6;
+
+  const handle = driftDown && quietHandle && handleDepthPct <= 8;
+
+  const evidence: string[] = [];
+  if (nearPivot)
+    evidence.push(`In buy zone: within 5% below pivot ${pivot.toFixed(2)}`);
+  if (handle) evidence.push("Handle forming: shallow drift on dry volume");
+
+  return {
+    present: nearPivot || handle,
+    nearPivot,
+    handle,
+    handleDepthPct,
+    evidence,
+  };
+}
+
+
+/* ============================================================
  * ENTRY ENGINE
  * ========================================================== */
 
@@ -744,6 +1005,13 @@ export function classifyEntrySetup(
 
   const pocketPivot =
     detectPocketPivot(ticks);
+
+    const shakeout = detectShakeoutReclaim(ticks);
+  const symmetry = detectBaseSymmetry(ticks);
+  const buyZone = detectBuyZone(
+    ticks,
+    symmetry.present ? symmetry.baseTop : undefined,
+  );
 
   const e10 =
     trend.ema10;
@@ -890,6 +1158,25 @@ export function classifyEntrySetup(
     );
   }
 
+    if (shakeout.present) {
+    score += 15;
+    evidence.push("Shakeout below 20/50 EMA reclaimed (weak hands removed)");
+  }
+
+  if (symmetry.present) {
+    score += 15;
+    evidence.push("Right side of base forming (symmetry)");
+  }
+
+  if (buyZone.present) {
+    score += 10;
+    evidence.push(
+      buyZone.handle
+        ? "Handle forming in buy zone (dry volume)"
+        : "In buy zone: within 5% of pivot",
+    );
+  }
+
   if (pocketPivot) {
     score += 15;
     evidence.push(
@@ -949,6 +1236,9 @@ export function classifyEntrySetup(
     rewardPct,
     rr,
     pocketPivot,
+    shakeout,   // 👈 ADD
+    symmetry,   // 👈 ADD
+    buyZone,    // 👈 ADD
     trend,
     pullback,
     score,
