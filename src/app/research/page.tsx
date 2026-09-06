@@ -691,6 +691,7 @@ export default function ResearchPage() {
     useMemo(
       () =>
         marketSeries
+                .filter((market) => !openSymbols.has(market.symbol)) 
           .map((market) => {
             const setup =
               classifyEntrySetup(
@@ -717,7 +718,7 @@ export default function ResearchPage() {
               b.setup.score -
               a.setup.score,
           ),
-      [marketSeries],
+       [marketSeries, openSymbols],
     );
 
   /*
