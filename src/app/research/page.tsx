@@ -476,16 +476,7 @@ export default function ResearchPage() {
   })));
 }, [trades]);
 
-  const metrics = calculateTradeMetrics(trades, new Date(), 0);
-
-const openSymbols = useMemo(() => {
-  return new Set(
-    metrics
-      .filter((m) => m.positionStatus === "Open" || m.positionStatus === "Partial")
-      .map((m) => m.name.trim().toUpperCase())
-      .filter(Boolean),
-  );
-}, [metrics]);
+ 
 
   const [
     symbol,
@@ -675,6 +666,15 @@ const openSymbols = useMemo(() => {
     calculateTradeMetrics(
       trades,
     );
+  const openSymbols = useMemo(() => {
+    return new Set(
+      metrics
+        .filter((m) => m.positionStatus === "Open" || m.positionStatus === "Partial")
+        .map((m) => m.name.trim().toUpperCase())
+        .filter(Boolean),
+    );
+  }, [metrics]);
+
 
   const missingSL =
     findMissingStopLossTrades(
@@ -698,33 +698,7 @@ const openSymbols = useMemo(() => {
    * Pocket Pivot
    * R:R
    */
-  // Debug: Log what's being filtered
-console.log('Market Series Symbols:', marketSeries.map(m => m.symbol));
-console.log('Open Symbols:', Array.from(openSymbols));
-console.log('After Filter:', marketSeries.filter(m => !openSymbols.has(m.symbol)).map(m => m.symbol));
-  // Debug logging
-useEffect(() => {
-  console.log('=== TRADES DEBUG ===');
-  console.log('Total trades:', trades.length);
-  console.log('Trades by status:', {
-    Open: trades.filter(t => t.positionStatus === 'Open').length,
-    Partial: trades.filter(t => t.positionStatus === 'Partial').length,
-    Closed: trades.filter(t => t.positionStatus === 'Closed').length,
-    Other: trades.filter(t => !['Open', 'Partial', 'Closed'].includes(t.positionStatus)).map(t => ({
-      name: t.name,
-      status: t.positionStatus
-    }))
-  });
-  
-  const openSymbolsDebug = new Set(
-    trades
-      .filter((t) => t.positionStatus === "Open" || t.positionStatus === "Partial")
-      .map((t) => t.name.trim().toUpperCase())
-      .filter(Boolean),
-  );
-  console.log('Open Symbols Set:', Array.from(openSymbolsDebug));
-  console.log('Market Series:', marketSeries.map(m => m.symbol));
-}, [trades, marketSeries]);
+ 
   const freshSetupRadar =
     useMemo(
       () =>
