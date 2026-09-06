@@ -468,13 +468,15 @@ export default function ResearchPage() {
 
   // 👇 ADD THIS: Get symbols that currently have an active position
   const openSymbols = useMemo(() => {
-    return new Set(
-      trades
-        .filter((t) => t.positionStatus !== "Closed") // Includes "Open" and "Partial"
-        .map((t) => t.name.trim().toUpperCase())
-        .filter(Boolean),
-    );
-  }, [trades]);
+  return new Set(
+    trades
+      .filter((t) => 
+        t.positionStatus === "Open" || t.positionStatus === "Partial"
+      )
+      .map((t) => t.name.trim().toUpperCase())
+      .filter(Boolean),
+  );
+}, [trades]);
 
   const [
     symbol,
