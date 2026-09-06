@@ -236,7 +236,7 @@ export default function ResearchPage() {
         )}
 
         {/* Use the new components */}
-        <ReEntryMonitor candidates={reentryCandidates} marketSeries={marketSeries} />
+       <ReEntryMonitor candidates={reentryCandidates} />
         <FreshSetupRadar setups={freshSetupRadar} />
 
         {/* Rest of your existing page (Selected Symbol Summary, Pattern Radar, etc.) */}
