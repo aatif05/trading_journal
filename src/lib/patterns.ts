@@ -897,22 +897,6 @@ export function classifyEntrySetup(
     );
   }
 
-  if (rr >= 3) {
-    score += 15;
-    evidence.push(
-      `R:R ${rr.toFixed(1)}:1`,
-    );
-  } else if (rr >= 2) {
-    score += 10;
-    evidence.push(
-      `R:R ${rr.toFixed(1)}:1`,
-    );
-  } else if (rr < 1.5) {
-    score -= 20;
-    evidence.push(
-      `Poor R:R ${rr.toFixed(1)}:1`,
-    );
-  }
 
   let state: SetupState;
 
