@@ -5,7 +5,7 @@ import {
   useMemo,
   useState,
 } from "react";
-
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   PatternMiniChart,
 } from "@/components/research/pattern-mini-chart";
