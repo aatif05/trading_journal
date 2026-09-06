@@ -717,7 +717,8 @@ console.log('After Filter:', marketSeries.filter(m => !openSymbols.has(m.symbol)
               symbol: string;
               setup: EntryClassification;
             } =>
-              item.setup !== null,
+              item.setup !== null && 
+          item.setup.state !== "BREAKDOWN",
           )
           .sort(
             (a, b) =>
