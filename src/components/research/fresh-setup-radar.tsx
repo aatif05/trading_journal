@@ -1,8 +1,8 @@
-
 import { type EntryClassification } from "@/lib/patterns";
 import { formatCurrency } from "@/lib/trades";
 import { StateBadge } from "./state-badge";
 import { Tooltip } from "./tooltip";
+import { Info } from "lucide-react";
 
 type FreshSetup = {
   symbol: string;
@@ -40,10 +40,6 @@ export function FreshSetupRadar({ setups }: FreshSetupRadarProps) {
           </p>
         )}
       </div>
-
-      <p className="mt-4 text-xs text-[#7b867f]">
-        ENTRY requires a healthy trend, healthy pullback, fresh confirmation and acceptable R:R. These are heuristic decision-support states, not trade recommendations.
-      </p>
     </section>
   );
 }
@@ -58,7 +54,22 @@ function FreshSetupCard({ symbol, setup }: { symbol: string; setup: EntryClassif
             Score {setup.score}/100 · CMP {formatCurrency(setup.entry)}
           </p>
         </div>
-        <StateBadge state={setup.state} />
+        
+        {/* DYNAMIC "WHY THIS SETUP" TOOLTIP */}
+        <div className="flex items-center gap-2">
+          <StateBadge state={setup.state} />
+          <Tooltip title={`Why this is ${setup.state}`}>
+            <div className="space-y-2 text-left">
+              <p className="font-semibold text-[#202923]">Score: {setup.score}/100</p>
+              <p className="font-semibold text-[#202923]">Key Drivers:</p>
+              <ul className="list-disc pl-4 space-y-1 text-[#66716a]">
+                {setup.evidence.slice(0, 5).map((point, i) => (
+                  <li key={i}>{point}</li>
+                ))}
+              </ul>
+            </div>
+          </Tooltip>
+        </div>
       </div>
 
       <SetupMetrics setup={setup} />
@@ -82,8 +93,6 @@ function FreshSetupCard({ symbol, setup }: { symbol: string; setup: EntryClassif
           <p className="mt-1 text-xs text-[#47715b]">{setup.pocketPivot.evidence.join(" · ")}</p>
         </div>
       )}
-
-      <p className="mt-3 text-xs leading-5 text-[#66716a]">{setup.evidence.join(" · ")}</p>
     </div>
   );
 }
@@ -92,42 +101,19 @@ function SetupMetrics({ setup }: { setup: EntryClassification }) {
   return (
     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
       <div className="rounded-xl bg-[#f7f9f7] p-3">
-        <div className="flex items-center gap-1">
-          <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">10 EMA</p>
-          <Tooltip title="10-period Exponential Moving Average">
-            <p className="text-[10px] text-[#7b867f]">Short-term trend indicator. Price above = bullish momentum.</p>
-          </Tooltip>
-        </div>
+        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">10 EMA</p>
         <p className="mt-1 font-bold">{setup.trend.ema10 ? formatCurrency(setup.trend.ema10) : "—"}</p>
       </div>
-
       <div className="rounded-xl bg-[#f7f9f7] p-3">
-        <div className="flex items-center gap-1">
-          <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">21 EMA</p>
-          <Tooltip title="21-period Exponential Moving Average">
-            <p className="text-[10px] text-[#7b867f]">Medium-term trend. Ideal structure: Price &gt; 10 EMA &gt; 21 EMA.</p>
-          </Tooltip>
-        </div>
+        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">21 EMA</p>
         <p className="mt-1 font-bold">{setup.trend.ema21 ? formatCurrency(setup.trend.ema21) : "—"}</p>
       </div>
-
       <div className="rounded-xl bg-[#f7f9f7] p-3">
-        <div className="flex items-center gap-1">
-          <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">Risk</p>
-          <Tooltip title="Risk Percentage">
-            <p className="text-[10px] text-[#7b867f]">Distance from entry to stop loss as % of current price. Lower risk % = tighter stop.</p>
-          </Tooltip>
-        </div>
+        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">Risk</p>
         <p className="mt-1 font-bold">{setup.riskPct.toFixed(1)}%</p>
       </div>
-
       <div className="rounded-xl bg-[#f7f9f7] p-3">
-        <div className="flex items-center gap-1">
-          <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">R:R</p>
-          <Tooltip title="Risk:Reward Ratio">
-            <p className="text-[10px] text-[#7b867f]">Potential reward divided by risk. Target: ≥2:1. &lt;1.5:1 is considered poor.</p>
-          </Tooltip>
-        </div>
+        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">R:R</p>
         <p className="mt-1 font-bold">{setup.rr.toFixed(1)}:1</p>
       </div>
     </div>
@@ -136,11 +122,9 @@ function SetupMetrics({ setup }: { setup: EntryClassification }) {
 
 function PullbackDetails({ setup }: { setup: EntryClassification }) {
   const pullback = setup.pullback;
-
   return (
     <div className="mt-4 rounded-xl border border-[#e4ebe6] bg-white p-4">
       <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#7b867f]">Pullback quality</p>
-
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div>
           <p className="text-[10px] text-[#7b867f]">Depth</p>
@@ -159,8 +143,6 @@ function PullbackDetails({ setup }: { setup: EntryClassification }) {
           <p className="mt-1 font-bold">{pullback.higherLow ? "Preserved" : "Weak"}</p>
         </div>
       </div>
-
-      <p className="mt-3 text-xs leading-5 text-[#66716a]">{pullback.evidence.join(" · ")}</p>
     </div>
   );
 }
