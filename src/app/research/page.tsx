@@ -97,55 +97,51 @@ function StateBadge({
   );
 }
 
-function SetupMetrics({
-  setup,
-}: {
-  setup: EntryClassification;
-}) {
+function SetupMetrics({ setup }: { setup: EntryClassification }) {
   return (
     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
       <div className="rounded-xl bg-[#f7f9f7] p-3">
-        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">
-          10 EMA
-        </p>
+        <div className="flex items-center gap-1">
+          <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">10 EMA</p>
+          <Tooltip title="10-period Exponential Moving Average">
+            <p className="text-[10px] text-[#7b867f]">Short-term trend indicator. Price above = bullish.</p>
+          </Tooltip>
+        </div>
         <p className="mt-1 font-bold">
-          {setup.trend.ema10
-            ? formatCurrency(
-                setup.trend.ema10,
-              )
-            : "—"}
+          {setup.trend.ema10 ? formatCurrency(setup.trend.ema10) : "—"}
         </p>
       </div>
 
       <div className="rounded-xl bg-[#f7f9f7] p-3">
-        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">
-          21 EMA
-        </p>
+        <div className="flex items-center gap-1">
+          <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">21 EMA</p>
+          <Tooltip title="21-period Exponential Moving Average">
+            <p className="text-[10px] text-[#7b867f]">Medium-term trend. Ideal: Price &gt; 10 EMA &gt; 21 EMA.</p>
+          </Tooltip>
+        </div>
         <p className="mt-1 font-bold">
-          {setup.trend.ema21
-            ? formatCurrency(
-                setup.trend.ema21,
-              )
-            : "—"}
+          {setup.trend.ema21 ? formatCurrency(setup.trend.ema21) : "—"}
         </p>
       </div>
 
       <div className="rounded-xl bg-[#f7f9f7] p-3">
-        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">
-          Risk
-        </p>
-        <p className="mt-1 font-bold">
-          {setup.riskPct.toFixed(1)}%
-        </p>
+        <div className="flex items-center gap-1">
+          <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">Risk</p>
+          <Tooltip title="Risk Percentage">
+            <p className="text-[10px] text-[#7b867f]">Distance from entry to stop loss as % of current price. Lower = tighter stop.</p>
+          </Tooltip>
+        </div>
+        <p className="mt-1 font-bold">{setup.riskPct.toFixed(1)}%</p>
       </div>
 
       <div className="rounded-xl bg-[#f7f9f7] p-3">
-        <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">
-          R:R
-        </p>
-        <p className="mt-1 font-bold">
-          {setup.rr.toFixed(1)}:1
-        </p>
+        <div className="flex items-center gap-1">
+          <p className="text-[10px] uppercase tracking-wide text-[#7b867f]">R:R</p>
+          <Tooltip title="Risk:Reward Ratio">
+            <p className="text-[10px] text-[#7b867f]">Potential reward vs risk. Target: ≥2:1. &lt;1.5:1 is poor.</p>
+          </Tooltip>
+        </div>
+        <p className="mt-1 font-bold">{setup.rr.toFixed(1)}:1</p>
       </div>
     </div>
   );
@@ -502,7 +498,7 @@ export default function ResearchPage() {
     aiLoading,
     setAiLoading,
   ] = useState(false);
-
+const [showGuide, setShowGuide] = useState(false);
   const [
     patterns,
     setPatterns,
@@ -996,6 +992,18 @@ export default function ResearchPage() {
               Refresh
             </button>
           </div>
+          <div className="flex gap-2">
+  <button
+    onClick={() => setShowGuide(true)}
+    className="inline-flex items-center gap-2 rounded-xl border border-[#dfe6e1] bg-white px-3 py-2 text-sm font-semibold text-[#202923] hover:bg-[#f7f9f7]"
+  >
+    <Info className="h-4 w-4" />
+    Guide
+  </button>
+  
+  <select ... />  {/* your existing select */}
+  <button ...>Refresh</button>  {/* your existing button */}
+</div>
         </header>
 
         {missingSL.length >
@@ -1843,6 +1851,82 @@ confirmation.
       </div>
 
       <BottomNav />
+      {showGuide && (
+  <div
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+    onClick={() => setShowGuide(false)}
+  >
+    <div
+      className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-6 shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="mb-4 flex items-center justify-between border-b border-[#edf0ee] pb-3">
+        <h2 className="text-xl font-bold text-[#202923]">Research Guide</h2>
+        <button
+          onClick={() => setShowGuide(false)}
+          className="rounded-lg p-1 text-[#7b867f] hover:bg-[#f7f9f7] hover:text-[#202923]"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="space-y-6 text-sm">
+        <section>
+          <h3 className="font-bold text-[#202923]">Setup Score (out of 100)</h3>
+          <p className="mt-2 text-[#66716a]">Scored based on trend strength, pullback quality, confirmation, and risk/reward:</p>
+          <ul className="mt-2 space-y-1 text-[#66716a]">
+            <li>• <strong>Trend (60 pts max):</strong> EMA structure (+20), price position (+20), EMA slopes (+20), higher-low (+10)</li>
+            <li>• <strong>Pullback (25 pts max):</strong> Healthy pullback (+15), volume/volatility contraction (+10)</li>
+            <li>• <strong>Confirmation (15 pts):</strong> Fresh Pocket Pivot (+15)</li>
+            <li>• <strong>Risk/Reward (15 pts max):</strong> R:R ≥3:1 (+15), ≥2:1 (+10), &lt;1.5:1 (-20 penalty)</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="font-bold text-[#202923]">Setup States</h3>
+          <div className="mt-2 space-y-2">
+            <div className="rounded-lg bg-[#e5f7ed] p-3">
+              <p className="font-bold text-[#087443]">ENTRY</p>
+              <p className="text-[#47715b]">Pocket Pivot + healthy trend + healthy pullback + R:R ≥2:1. Ready to act.</p>
+            </div>
+            <div className="rounded-lg bg-[#edf6ff] p-3">
+              <p className="font-bold text-[#1c5d91]">STRONG WATCH</p>
+              <p className="text-[#4a6b8a]">Strong trend + healthy pullback + contraction. Watching for confirmation.</p>
+            </div>
+            <div className="rounded-lg bg-[#fff6df] p-3">
+              <p className="font-bold text-[#8b6414]">HEALTHY PULLBACK</p>
+              <p className="text-[#8b6414]">Pullback present but not all criteria met. Monitor closely.</p>
+            </div>
+            <div className="rounded-lg bg-[#fff0e8] p-3">
+              <p className="font-bold text-[#a64a20]">EXTENDED — DON'T CHASE</p>
+              <p className="text-[#a64a20]">Price &gt;8% above EMA10 OR &gt;12% above EMA21 OR at 20-day high without pullback. Wait for reset.</p>
+            </div>
+            <div className="rounded-lg bg-[#ffe9ed] p-3">
+              <p className="font-bold text-[#ad3044]">BREAKDOWN</p>
+              <p className="text-[#ad3044]">Price below EMA21 and pullback unhealthy. Avoid.</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="font-bold text-[#202923]">Pullback Quality Metrics</h3>
+          <ul className="mt-2 space-y-1 text-[#66716a]">
+            <li>• <strong>Depth:</strong> How far price pulled back from recent high. &lt;8% = excellent, &lt;12% = acceptable.</li>
+            <li>• <strong>Volume:</strong> Recent 5-day avg vs prior 15-day avg. &lt;85% = contracting (good).</li>
+            <li>• <strong>Volatility:</strong> Recent range vs prior range. &lt;90% = contracting (good).</li>
+            <li>• <strong>Higher Low:</strong> Whether uptrend structure is preserved during pullback.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="font-bold text-[#202923]">Pocket Pivot</h3>
+          <p className="mt-2 text-[#66716a]">A Pocket Pivot occurs when today's volume exceeds the largest down-day volume in the past 10 sessions, AND price closes higher than previous day. This signals institutional accumulation.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+)}
+      
     </main>
   );
 }
