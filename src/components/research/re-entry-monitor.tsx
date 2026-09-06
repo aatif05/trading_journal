@@ -1,14 +1,19 @@
 import { type ReEntryClassification } from "@/lib/patterns";
 import { formatCurrency } from "@/lib/trades";
 import { StateBadge } from "./state-badge";
+import { Tooltip } from "./tooltip";
 
 type ReEntryCandidate = {
-  trade: { id: string };
+  trade: any;
   symbol: string;
   setup: ReEntryClassification;
 };
 
-export function ReEntryMonitor({ candidates }: { candidates: ReEntryCandidate[] }) {
+type ReEntryMonitorProps = {
+  candidates: ReEntryCandidate[];
+};
+
+export function ReEntryMonitor({ candidates }: ReEntryMonitorProps) {
   return (
     <section className="mt-4 rounded-2xl border border-[#ddd5f1] bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -50,7 +55,21 @@ function ReEntryCard({ symbol, setup }: { symbol: string; setup: ReEntryClassifi
           <p className="font-bold">{symbol}</p>
           <p className="mt-1 text-xs text-[#7b867f]">Current {formatCurrency(setup.current)}</p>
         </div>
-        <StateBadge state={setup.state} />
+
+        {/* DYNAMIC "WHY THIS SETUP" TOOLTIP */}
+        <div className="flex items-center gap-2">
+          <StateBadge state={setup.state} />
+          <Tooltip title={`Why this is ${setup.state}`}>
+            <div className="space-y-2 text-left">
+              <p className="font-semibold text-[#202923]">Key Drivers:</p>
+              <ul className="list-disc pl-4 space-y-1 text-[#66716a]">
+                {setup.evidence.slice(0, 5).map((point, i) => (
+                  <li key={i}>{point}</li>
+                ))}
+              </ul>
+            </div>
+          </Tooltip>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -93,8 +112,6 @@ function ReEntryCard({ symbol, setup }: { symbol: string; setup: ReEntryClassifi
           <p>{setup.pocketPivot ? "✓" : "×"} Fresh Pocket Pivot</p>
         </div>
       </div>
-
-      <p className="mt-3 text-xs leading-5 text-[#66716a]">{setup.evidence.join(" · ")}</p>
     </div>
   );
 }
