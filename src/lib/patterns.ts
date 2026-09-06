@@ -167,8 +167,9 @@ export type EntryClassification = {
   rr: number;
 
   pocketPivot: PocketPivot | null;
-   shakeout: ShakeoutReclaim;      // 👈 ADD
-  symmetry: BaseSymmetry;         // 👈 ADD
+   shakeout: ShakeoutReclaim;     
+  symmetry: BaseSymmetry;   
+  buyZone: BuyZone;
 
   trend: TrendHealth;
   pullback: PullbackAnalysis;
