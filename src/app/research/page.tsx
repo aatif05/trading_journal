@@ -465,17 +465,6 @@ export default function ResearchPage() {
       ],
     [trades],
   );
-
-  useEffect(() => {
-  const openTrades = trades.filter(t => t.positionStatus === "Open" || t.positionStatus === "Partial");
-  console.log('Open trades count:', openTrades.length);
-  console.log('Open trades:', openTrades.map(t => ({ 
-    tradeNo: t.tradeNo, 
-    name: t.name, 
-    status: t.positionStatus 
-  })));
-}, [trades]);
-
  
 
   const [
