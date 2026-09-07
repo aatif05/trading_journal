@@ -1,0 +1,129 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/analytics",
+      "regex": "^/analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/analytics(?:/)?$"
+    },
+    {
+      "page": "/api/journal",
+      "regex": "^/api/journal(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/journal(?:/)?$"
+    },
+    {
+      "page": "/api/prices",
+      "regex": "^/api/prices(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/prices(?:/)?$"
+    },
+    {
+      "page": "/api/prices/candles",
+      "regex": "^/api/prices/candles(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/prices/candles(?:/)?$"
+    },
+    {
+      "page": "/api/research",
+      "regex": "^/api/research(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/research(?:/)?$"
+    },
+    {
+      "page": "/api/research/market",
+      "regex": "^/api/research/market(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/research/market(?:/)?$"
+    },
+    {
+      "page": "/api/trade-review",
+      "regex": "^/api/trade\\-review(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/trade\\-review(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/fund-management",
+      "regex": "^/fund\\-management(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/fund\\-management(?:/)?$"
+    },
+    {
+      "page": "/research",
+      "regex": "^/research(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/research(?:/)?$"
+    },
+    {
+      "page": "/stock-charts",
+      "regex": "^/stock\\-charts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/stock\\-charts(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

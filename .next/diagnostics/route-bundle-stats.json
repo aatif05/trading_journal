@@ -1,0 +1,83 @@
+[
+  {
+    "route": "/analytics",
+    "firstLoadUncompressedJsBytes": 892972,
+    "firstLoadChunkPaths": [
+      ".next/static/chunks/3fntmmi971322.js",
+      ".next/static/chunks/3d5ym25ov9xqk.js",
+      ".next/static/chunks/187kt93j97qoe.js",
+      ".next/static/chunks/1prqnu7gz61p5.js",
+      ".next/static/chunks/1u5zan5bs9a7v.js",
+      ".next/static/chunks/41cd9kojo5dhk.js",
+      ".next/static/chunks/08ttfj81-47mu.js",
+      ".next/static/chunks/turbopack-3_v2m_wcl-522.js"
+    ]
+  },
+  {
+    "route": "/research",
+    "firstLoadUncompressedJsBytes": 713880,
+    "firstLoadChunkPaths": [
+      ".next/static/chunks/3fntmmi971322.js",
+      ".next/static/chunks/2lg9upnxjacq3.js",
+      ".next/static/chunks/398dddb4a0dtz.js",
+      ".next/static/chunks/09ey_ux4hcz3b.js",
+      ".next/static/chunks/1prqnu7gz61p5.js",
+      ".next/static/chunks/1u5zan5bs9a7v.js",
+      ".next/static/chunks/41cd9kojo5dhk.js",
+      ".next/static/chunks/08ttfj81-47mu.js",
+      ".next/static/chunks/turbopack-3_v2m_wcl-522.js"
+    ]
+  },
+  {
+    "route": "/stock-charts",
+    "firstLoadUncompressedJsBytes": 676392,
+    "firstLoadChunkPaths": [
+      ".next/static/chunks/3fntmmi971322.js",
+      ".next/static/chunks/0qu8psw5wawbz.js",
+      ".next/static/chunks/09ey_ux4hcz3b.js",
+      ".next/static/chunks/1prqnu7gz61p5.js",
+      ".next/static/chunks/1u5zan5bs9a7v.js",
+      ".next/static/chunks/41cd9kojo5dhk.js",
+      ".next/static/chunks/08ttfj81-47mu.js",
+      ".next/static/chunks/turbopack-3_v2m_wcl-522.js"
+    ]
+  },
+  {
+    "route": "/",
+    "firstLoadUncompressedJsBytes": 539545,
+    "firstLoadChunkPaths": [
+      ".next/static/chunks/3fntmmi971322.js",
+      ".next/static/chunks/27ms_512-9vx0.js",
+      ".next/static/chunks/1prqnu7gz61p5.js",
+      ".next/static/chunks/13jqyuqujql72.js",
+      ".next/static/chunks/1u5zan5bs9a7v.js",
+      ".next/static/chunks/41cd9kojo5dhk.js",
+      ".next/static/chunks/08ttfj81-47mu.js",
+      ".next/static/chunks/turbopack-3_v2m_wcl-522.js"
+    ]
+  },
+  {
+    "route": "/fund-management",
+    "firstLoadUncompressedJsBytes": 503050,
+    "firstLoadChunkPaths": [
+      ".next/static/chunks/3fntmmi971322.js",
+      ".next/static/chunks/0qjbchnih8nw5.js",
+      ".next/static/chunks/1prqnu7gz61p5.js",
+      ".next/static/chunks/1u5zan5bs9a7v.js",
+      ".next/static/chunks/41cd9kojo5dhk.js",
+      ".next/static/chunks/08ttfj81-47mu.js",
+      ".next/static/chunks/turbopack-3_v2m_wcl-522.js"
+    ]
+  },
+  {
+    "route": "/_not-found",
+    "firstLoadUncompressedJsBytes": 452774,
+    "firstLoadChunkPaths": [
+      ".next/static/chunks/3fntmmi971322.js",
+      ".next/static/chunks/1u5zan5bs9a7v.js",
+      ".next/static/chunks/41cd9kojo5dhk.js",
+      ".next/static/chunks/08ttfj81-47mu.js",
+      ".next/static/chunks/turbopack-3_v2m_wcl-522.js"
+    ]
+  }
+]

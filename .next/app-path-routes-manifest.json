@@ -1,0 +1,16 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/analytics/page": "/analytics",
+  "/api/journal/route": "/api/journal",
+  "/api/prices/candles/route": "/api/prices/candles",
+  "/api/prices/route": "/api/prices",
+  "/api/research/market/route": "/api/research/market",
+  "/api/research/route": "/api/research",
+  "/api/trade-review/route": "/api/trade-review",
+  "/favicon.ico/route": "/favicon.ico",
+  "/fund-management/page": "/fund-management",
+  "/page": "/",
+  "/research/page": "/research",
+  "/stock-charts/page": "/stock-charts"
+}

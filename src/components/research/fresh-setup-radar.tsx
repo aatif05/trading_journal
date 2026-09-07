@@ -1,5 +1,8 @@
+"use client";
 
+import { useEffect, useState } from "react";
 import { type EntryClassification } from "@/lib/patterns";
+import { fetchLatestPrices, type LatestPrices } from "@/lib/prices";
 import { formatCurrency } from "@/lib/trades";
 import { StateBadge } from "./state-badge";
 import { Tooltip } from "./tooltip";
@@ -14,6 +17,32 @@ type FreshSetupRadarProps = {
 };
 
 export function FreshSetupRadar({ setups }: FreshSetupRadarProps) {
+  const [livePrices, setLivePrices] = useState<LatestPrices>({});
+  const [loading, setLoading] = useState(false);
+
+  // Fetch live prices only for symbols with ENTRY state (healthy pullback + confirmation)
+  useEffect(() => {
+    const entrySymbols = setups
+      .filter((s) => s.setup.state === "ENTRY")
+      .map((s) => s.symbol);
+
+    if (!entrySymbols.length) return;
+
+    async function fetchPrices() {
+      setLoading(true);
+      try {
+        const prices = await fetchLatestPrices(entrySymbols);
+        setLivePrices(prices);
+      } catch (error) {
+        console.error("Failed to fetch live prices for fresh setup radar:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPrices();
+  }, [setups]);
+
   return (
     <section className="mt-6 rounded-2xl border border-[#cfe0d5] bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -26,13 +55,18 @@ export function FreshSetupRadar({ setups }: FreshSetupRadarProps) {
             No existing position required. Every setup is evaluated from trend through risk/reward.
           </p>
         </div>
-        <p className="text-xs text-[#7b867f]">{setups.length} setups</p>
+        <div className="flex items-center gap-2">
+          {loading && (
+            <p className="text-xs text-[#7b867f]">Fetching live prices…</p>
+          )}
+          <p className="text-xs text-[#7b867f]">{setups.length} setups</p>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {setups.length ? (
           setups.map(({ symbol, setup }) => (
-            <FreshSetupCard key={symbol} symbol={symbol} setup={setup} />
+            <FreshSetupCard key={symbol} symbol={symbol} setup={setup} livePrice={livePrices[symbol]} />
           ))
         ) : (
           <p className="text-sm text-[#66716a]">
@@ -48,14 +82,23 @@ export function FreshSetupRadar({ setups }: FreshSetupRadarProps) {
   );
 }
 
-function FreshSetupCard({ symbol, setup }: { symbol: string; setup: EntryClassification }) {
+function FreshSetupCard({ symbol, setup, livePrice }: { symbol: string; setup: EntryClassification; livePrice?: number }) {
+  // Use live price if available, otherwise fall back to daily close
+  const displayPrice = livePrice ?? setup.entry;
+  const isLive = livePrice !== undefined;
+
   return (
     <div className="rounded-2xl border border-[#e1e8e3] bg-white p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-bold">{symbol}</p>
           <p className="mt-1 text-xs text-[#7b867f]">
-            Score {setup.score}/100 · CMP {formatCurrency(setup.entry)}
+            CMP {formatCurrency(displayPrice)}
+            {isLive && (
+              <span className="ml-2 inline-flex items-center rounded-full bg-[#11885c]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#11885c]">
+                Live
+              </span>
+            )}
           </p>
         </div>
         <StateBadge state={setup.state} />

@@ -1,0 +1,16 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/analytics/page": "app/analytics/page.js",
+  "/api/journal/route": "app/api/journal/route.js",
+  "/api/prices/candles/route": "app/api/prices/candles/route.js",
+  "/api/prices/route": "app/api/prices/route.js",
+  "/api/research/market/route": "app/api/research/market/route.js",
+  "/api/research/route": "app/api/research/route.js",
+  "/api/trade-review/route": "app/api/trade-review/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/fund-management/page": "app/fund-management/page.js",
+  "/page": "app/page.js",
+  "/research/page": "app/research/page.js",
+  "/stock-charts/page": "app/stock-charts/page.js"
+}
