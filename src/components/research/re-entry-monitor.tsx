@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { type ReEntryClassification } from "@/lib/patterns";
+import { fetchLatestPrices, type LatestPrices } from "@/lib/prices";
 import { formatCurrency } from "@/lib/trades";
 import { StateBadge } from "./state-badge";
 
@@ -9,6 +13,32 @@ type ReEntryCandidate = {
 };
 
 export function ReEntryMonitor({ candidates }: { candidates: ReEntryCandidate[] }) {
+  const [livePrices, setLivePrices] = useState<LatestPrices>({});
+  const [loading, setLoading] = useState(false);
+
+  // Fetch live prices only for symbols with healthy pullback / re-entry watch
+  useEffect(() => {
+    const watchSymbols = candidates
+      .filter((c) => c.setup.state === "RE-ENTRY WATCH" || c.setup.state === "ENTRY")
+      .map((c) => c.symbol);
+
+    if (!watchSymbols.length) return;
+
+    async function fetchPrices() {
+      setLoading(true);
+      try {
+        const prices = await fetchLatestPrices(watchSymbols);
+        setLivePrices(prices);
+      } catch (error) {
+        console.error("Failed to fetch live prices for re-entry monitor:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPrices();
+  }, [candidates]);
+
   return (
     <section className="mt-4 rounded-2xl border border-[#ddd5f1] bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -21,13 +51,23 @@ export function ReEntryMonitor({ candidates }: { candidates: ReEntryCandidate[] 
             Only active positions are evaluated. Historical Pocket Pivots cannot create a current re-entry.
           </p>
         </div>
-        <p className="text-xs text-[#7b867f]">{candidates.length} candidates</p>
+        <div className="flex items-center gap-2">
+          {loading && (
+            <p className="text-xs text-[#7b867f]">Fetching live prices…</p>
+          )}
+          <p className="text-xs text-[#7b867f]">{candidates.length} candidates</p>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {candidates.length ? (
           candidates.map(({ trade, symbol, setup }) => (
-            <ReEntryCard key={`${trade.id}-${symbol}`} symbol={symbol} setup={setup} />
+            <ReEntryCard
+              key={`${trade.id}-${symbol}`}
+              symbol={symbol}
+              setup={setup}
+              livePrice={livePrices[symbol]}
+            />
           ))
         ) : (
           <div className="rounded-xl bg-[#f7f9f7] p-4">
@@ -42,13 +82,32 @@ export function ReEntryMonitor({ candidates }: { candidates: ReEntryCandidate[] 
   );
 }
 
-function ReEntryCard({ symbol, setup }: { symbol: string; setup: ReEntryClassification }) {
+function ReEntryCard({
+  symbol,
+  setup,
+  livePrice,
+}: {
+  symbol: string;
+  setup: ReEntryClassification;
+  livePrice?: number;
+}) {
+  // Use live price if available, otherwise fall back to daily close
+  const displayPrice = livePrice ?? setup.current;
+  const isLive = livePrice !== undefined;
+
   return (
     <div className="rounded-2xl border border-[#ddd5f1] bg-white p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-bold">{symbol}</p>
-          <p className="mt-1 text-xs text-[#7b867f]">Current {formatCurrency(setup.current)}</p>
+          <p className="mt-1 text-xs text-[#7b867f]">
+            Current {formatCurrency(displayPrice)}
+            {isLive && (
+              <span className="ml-2 inline-flex items-center rounded-full bg-[#11885c]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#11885c]">
+                Live
+              </span>
+            )}
+          </p>
         </div>
         <StateBadge state={setup.state} />
       </div>
