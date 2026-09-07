@@ -1,5 +1,6 @@
 export type TradeSide = "Buy" | "Sell";
 export type PositionStatus = "Open" | "Closed" | "Partial";
+export type SellAlertMode = "EARLY_STRETCH" | "EXTENDED" | "NONE";
 export type Trade = {
   id: string;
   tradeNo: number;
@@ -43,6 +44,18 @@ export type Trade = {
   baseDuration: string;
   quickNote: string;
   brokerage: number;
+  /** Base pivot price (base top or fallback to avg entry) */
+  basePivot?: number;
+  /** Sessions count since pivot cross */
+  sessionsSincePivot?: number;
+  /** Climax volume day flag */
+  hasClimaxVolume?: boolean;
+  /** Average volume for climax detection */
+  avgVolume?: number;
+  /** Latest volume for climax detection */
+  latestVolume?: number;
+  /** Sell alert mode computed by engine */
+  sellAlertMode?: SellAlertMode;
 };
 
 export type ExitMetric = {
@@ -75,6 +88,7 @@ export type TradeMetric = Trade & {
   computedAvgExit: number;
   cummPF: number;
   exits: ExitMetric[];
+  emaStretchPct?: number;
 };
 
 export type PortfolioMetrics = {
@@ -136,6 +150,12 @@ const baseTrade: Omit<Trade, "id" | "tradeNo" | "date" | "name"> = {
   baseDuration: "",
   quickNote: "",
   brokerage: 0,
+  basePivot: undefined,
+  sessionsSincePivot: undefined,
+  hasClimaxVolume: false,
+  avgVolume: undefined,
+  latestVolume: undefined,
+  sellAlertMode: "NONE",
 };
 
 export const setupOptions = ["", "Breakout", "Continuation", "Pullback", "Reversal", "EP", "FLAG"];
@@ -284,6 +304,12 @@ function normalizeTrade(trade: Record<string, unknown>): Trade {
     baseDuration: String(trade.baseDuration || ""),
     quickNote: String(trade.quickNote || ""),
     brokerage: finite(trade.brokerage),
+    basePivot: trade.basePivot !== undefined ? finite(trade.basePivot) : undefined,
+    sessionsSincePivot: trade.sessionsSincePivot !== undefined ? finite(trade.sessionsSincePivot) : undefined,
+    hasClimaxVolume: Boolean(trade.hasClimaxVolume),
+    avgVolume: trade.avgVolume !== undefined ? finite(trade.avgVolume) : undefined,
+    latestVolume: trade.latestVolume !== undefined ? finite(trade.latestVolume) : undefined,
+    sellAlertMode: (trade.sellAlertMode as SellAlertMode) || "NONE",
   };
 }
 
