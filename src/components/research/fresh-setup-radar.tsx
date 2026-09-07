@@ -23,7 +23,6 @@ export function FreshSetupRadar({ setups }: FreshSetupRadarProps) {
   // Fetch live prices only for symbols with ENTRY state (healthy pullback + confirmation)
   useEffect(() => {
     const entrySymbols = setups
-      .filter((s) => s.setup.state === "ENTRY")
       .map((s) => s.symbol);
 
     if (!entrySymbols.length) return;
