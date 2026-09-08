@@ -22,6 +22,7 @@ import { PatternMiniChart } from "@/components/research/pattern-mini-chart";
 import { ReEntryMonitor } from "@/components/research/re-entry-monitor";
 import { FreshSetupRadar } from "@/components/research/fresh-setup-radar";
 import { StateBadge } from "@/components/research/state-badge";
+import { PatternScanner } from "@/components/research/pattern-scanner";
 
 const CHART_WINDOW = 45;
 
@@ -361,10 +362,13 @@ export default function ResearchPage() {
                   <p className="mt-1 font-bold">{selectedSetup.pullback.higherLow ? "Preserved" : "Weak"}</p>
                 </div>
               </div>
-              <p className="mt-3 text-xs leading-5 text-[#66716a]">{selectedSetup.pullback.evidence.join(" · ")}</p>
+              <p className=\"mt-3 text-xs leading-5 text-[#66716a]\">{selectedSetup.pullback.evidence.join(\" · \")}</p>
             </div>
           </section>
         )}
+
+        {/* TEMPORARY PATTERN SCANNER */}
+        <PatternScanner />
 
         {/* PATTERN RADAR */}
         <section className="mt-4 rounded-2xl border border-[#e2e9e3] bg-white p-5">
