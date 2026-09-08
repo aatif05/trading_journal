@@ -1579,112 +1579,208 @@ function detectVCP(
   const v = volumes(ticks);
   const c = closes(ticks);
 
-  if (h.length < 40) {
+  if (h.length < 60) {
     return null;
   }
 
-  const LOOKBACK = 90;
-
-  const start =
-    Math.max(
-      0,
-      h.length - LOOKBACK,
-    );
-
-  const points =
-    findSwingPoints(
-      h.slice(start),
-      l.slice(start),
-      3,
-    );
-
-  const contractions =
-    buildContractions(
-      points,
-      v.slice(start),
-    );
-
-  const last =
-    contractions.slice(-4);
-
-  if (last.length < 2) {
+  /*
+   * STEP 1: Validate uptrend before VCP
+   * 
+   * VCP must occur after a meaningful advance.
+   * Check that price is above long-term averages
+   * and has made a significant move up.
+   */
+  const e50 = ema(c, 50);
+  const e200 = ema(c, 200);
+  const currentPrice = c.at(-1)!;
+  
+  if (e50 === null || e200 === null) {
     return null;
   }
 
-  const validSequence =
-    last.every(
-      (leg, i) =>
-        i === 0 ||
-        (
-          leg.depthPct <=
-            last[i - 1]
-              .depthPct *
-              1.15 &&
-          leg.avgVolume <=
-            last[i - 1]
-              .avgVolume *
-              1.15
-        ),
-    );
-
-  if (!validSequence) {
+  // Must be in long-term uptrend
+  if (currentPrice < e50 || e50 < e200) {
     return null;
   }
 
-  const finalLeg =
-    last.at(-1)!;
+  // Check for prior advance (at least 20% from 200-day low)
+  const low200 = Math.min(...c.slice(-200));
+  const advanceFromLow = (currentPrice - low200) / low200;
+  
+  if (advanceFromLow < 0.20) {
+    return null; // No significant prior advance
+  }
 
-  if (
-    finalLeg.depthPct > 0.15
-  ) {
+  const LOOKBACK = 120;
+  const start = Math.max(0, h.length - LOOKBACK);
+
+  /*
+   * STEP 2: Find swing points with adaptive window
+   * 
+   * Use larger window for more reliable swing detection.
+   * Window of 5 captures more significant pivots.
+   */
+  const points = findSwingPoints(
+    h.slice(start),
+    l.slice(start),
+    5, // Increased from 3 to 5 for more reliable swings
+  );
+
+  if (points.length < 6) {
+    return null; // Need enough swings to form VCP
+  }
+
+  const contractions = buildContractions(
+    points,
+    v.slice(start),
+  );
+
+  if (contractions.length < 3) {
+    return null; // VCP needs at least 3 contractions
+  }
+
+  /*
+   * STEP 3: Analyze contraction sequence
+   * 
+   * Classic VCP characteristics:
+   * - Each successive contraction should be shallower
+   * - Volume should decline with each contraction
+   * - Final contraction should be tight (< 8-10%)
+   */
+  const last = contractions.slice(-5);
+  
+  // Need at least 3 contractions in the final sequence
+  if (last.length < 3) {
     return null;
   }
 
-  const pivot =
-    finalLeg.high;
+  /*
+   * Check for progressive tightening:
+   * - Each leg should be <= 85% depth of prior leg (stricter than 115%)
+   * - Volume should also contract progressively
+   */
+  let tighteningCount = 0;
+  let volumeContractingCount = 0;
 
-  const lastClose =
-    c.at(-1) ?? 0;
+  for (let i = 1; i < last.length; i++) {
+    const prevLeg = last[i - 1];
+    const currLeg = last[i];
 
-  const nearPivot =
-    lastClose >=
-    pivot * 0.97;
+    // Check if current contraction is tighter than previous
+    if (currLeg.depthPct <= prevLeg.depthPct * 0.90) {
+      tighteningCount++;
+    }
 
-  const avgVolRecent =
-    avg(v.slice(-10));
+    // Check if volume is contracting
+    if (currLeg.avgVolume <= prevLeg.avgVolume * 0.90) {
+      volumeContractingCount++;
+    }
+  }
 
-  const avgVolPrior =
-    avg(v.slice(-30, -10));
+  // Require at least 60% of transitions to show tightening
+  const requiredTightening = Math.floor((last.length - 1) * 0.6);
+  const requiredVolumeContract = Math.floor((last.length - 1) * 0.5);
 
-  const volumeDry =
-    avgVolPrior > 0 &&
-    avgVolRecent <
-      avgVolPrior * 0.8;
+  if (tighteningCount < requiredTightening) {
+    return null; // Not enough progressive tightening
+  }
 
-  const confidence =
-    last.length >= 3 &&
-    nearPivot &&
-    volumeDry
+  const finalLeg = last.at(-1)!;
+
+  /*
+   * STEP 4: Validate final contraction
+   * 
+   * Final contraction should be tight (<= 10% ideally, max 12%)
+   */
+  if (finalLeg.depthPct > 0.12) {
+    return null; // Final contraction too loose
+  }
+
+  const pivot = finalLeg.high;
+
+  const lastClose = c.at(-1) ?? 0;
+
+  /*
+   * STEP 5: Check proximity to pivot
+   * 
+   * Price should be within 5% of pivot (relaxed from 3%)
+   * This allows for patterns coiling just below breakout point
+   */
+  const nearPivot = lastClose >= pivot * 0.95;
+
+  if (!nearPivot) {
+    return null; // Price too far from pivot
+  }
+
+  /*
+   * STEP 6: Volume dry-up analysis
+   * 
+   * Compare volume in final consolidation vs prior active periods
+   */
+  const avgVolRecent = avg(v.slice(-15));
+  const avgVolPrior = avg(v.slice(-45, -15));
+  const avgVolEarly = avg(v.slice(-90, -45));
+
+  const volumeDry = avgVolPrior > 0 && 
+    avgVolRecent < avgVolPrior * 0.70; // Stricter: 70% instead of 80%
+
+  const extremeVolumeDry = avgVolEarly > 0 &&
+    avgVolRecent < avgVolEarly * 0.50; // Very strong signal
+
+  /*
+   * STEP 7: Check for proper base structure
+   * 
+   * The base should have a clear pivot high that was tested multiple times
+   */
+  const pivotTests = last.filter(leg => 
+    Math.abs(leg.high - pivot) < pivot * 0.03
+  ).length;
+
+  const multiTestPivot = pivotTests >= 2;
+
+  /*
+   * STEP 8: Assign confidence level
+   * 
+   * High: 4+ contractions, tight final leg, volume dry-up, multi-test pivot
+   * Medium: 3+ contractions with either volume dry-up OR near pivot
+   * Low: Basic pattern recognition without confirmation
+   */
+  const confidence = 
+    last.length >= 4 &&
+    finalLeg.depthPct <= 0.08 &&
+    volumeDry &&
+    multiTestPivot
       ? "High"
-      : nearPivot ||
-          volumeDry
+      : last.length >= 3 && 
+        (volumeDry || extremeVolumeDry) &&
+        nearPivot
         ? "Medium"
-        : "Low";
+        : last.length >= 3 && nearPivot
+          ? "Low"
+          : null;
+
+  if (confidence === null) {
+    return null;
+  }
 
   return {
     pivot,
     confidence,
     evidence: [
       `${last.length} successive contractions detected`,
-      `Final pullback ${(
-        finalLeg.depthPct * 100
-      ).toFixed(1)}% deep`,
-      volumeDry
-        ? "Volume has dried up into the pivot"
-        : "Volume not yet confirming dry-up",
+      `Progressive tightening: ${tighteningCount}/${last.length - 1} transitions`,
+      `Volume contraction: ${volumeContractingCount}/${last.length - 1} transitions`,
+      `Final pullback ${(finalLeg.depthPct * 100).toFixed(1)}% deep`,
+      `Pivot tested ${pivotTests} times`,
+      extremeVolumeDry
+        ? "Extreme volume dry-up (50%+ below early period)"
+        : volumeDry
+          ? "Volume has dried up significantly into the pivot"
+          : "Volume dry-up not yet confirmed",
       nearPivot
-        ? "Price is near the pivot high"
+        ? `Price within ${((1 - lastClose/pivot) * 100).toFixed(1)}% of pivot high`
         : "Price remains below the pivot",
+      `Prior advance: ${(advanceFromLow * 100).toFixed(1)}% from 200-day low`,
     ],
   };
 }
