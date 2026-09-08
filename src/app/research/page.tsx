@@ -362,7 +362,7 @@ export default function ResearchPage() {
                   <p className="mt-1 font-bold">{selectedSetup.pullback.higherLow ? "Preserved" : "Weak"}</p>
                 </div>
               </div>
-              <p className=\"mt-3 text-xs leading-5 text-[#66716a]\">{selectedSetup.pullback.evidence.join(\" · \")}</p>
+              <p className="mt-3 text-xs leading-5 text-[#66716a]">{selectedSetup.pullback.evidence.join(" · ")}</p>
             </div>
           </section>
         )}
